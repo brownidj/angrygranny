@@ -79,7 +79,31 @@ class AngryGrannyApp:
             level = self.players[self.selected_player]["current_level"]
             messagebox.showinfo("Player Info", f"Player: {self.selected_player}\nLevel: {level}")
             try:
-                subprocess.Popen([sys.executable, "angry_granny_py5.py", self.selected_player, level])
+                # Launch the game and wait for it to finish
+                process = subprocess.Popen([sys.executable, "angry_granny_py5.py", self.selected_player, level])
+                process.wait()
+
+                # If a result file was created, read and update high scores
+                result_file = "last_score.json"
+                if os.path.exists(result_file):
+                    with open(result_file, "r") as f:
+                        result = json.load(f)
+
+                    player = result["player"]
+                    level = result["level"]
+                    score = result["score"]
+
+                    current_high = self.players[player]["high_scores"].get(level, 0)
+                    if score > current_high:
+                        self.players[player]["high_scores"][level] = score
+                        save_players(self.players)
+                        messagebox.showinfo("🎉 New High Score!",
+                                            f"{player} scored {score} on {level}!\n(previous: {current_high})")
+                    else:
+                        print(f"{player} scored {score} on {level}, which did not beat {current_high}.")
+
+                    os.remove(result_file)
+
             except Exception as e:
                 messagebox.showerror("Launch Error", f"Could not launch game:\n{e}")
 
