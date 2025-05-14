@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import messagebox, simpledialog
 import json
@@ -96,26 +97,47 @@ class AngryGrannyApp:
 
             def run_game_and_update(player, level):
                 try:
-                    process = subprocess.Popen([sys.executable, "angry_granny_py5.py", player, level])
-                    process.wait()
+                    while True:
+                        print(f"Launching game for {player} at {level}...")
+                        process = subprocess.Popen([sys.executable, "angry_granny_py5.py", player, level])
+                        process.wait()
+                        print("Game subprocess ended.")
 
-                    result_file = "last_score.json"
-                    if os.path.exists(result_file):
-                        with open(result_file, "r") as f:
-                            result = json.load(f)
+                        result_file = "last_score.json"
+                        # Read and evaluate result
+                        if os.path.exists(result_file):
+                            with open(result_file, "r") as f:
+                                result = json.load(f)
 
-                        score = result["score"]
-                        current_high = self.players[player]["high_scores"].get(level, 0)
+                            score = result["score"]
+                            current_high = self.players[player]["high_scores"].get(level, 0)
 
-                        if score > current_high:
-                            self.players[player]["high_scores"][level] = score
-                            save_players(self.players)
-                            self.root.after(0, lambda: messagebox.showinfo("🎉 New High Score!",
-                                                                           f"{player} scored {score} on {level}!\n(previous: {current_high})"))
-                        os.remove(result_file)
+                            message = f"{player} scored {score} on {level}.\n"
+                            if score > current_high:
+                                self.players[player]["high_scores"][level] = score
+                                save_players(self.players)
+                                message += "🎉 Congratulations! You set a new high score!\n"
+
+                            os.remove(result_file)
+                        else:
+                            message = "Game finished, but no score was recorded.\n"
+
+                        # Append prompt and show one single dialog
+                        message += "\nWould you like to play again?"
+                        play_again = messagebox.askyesno("Game Over", message)
+
+                        if play_again:
+                            time.sleep(4)
+                            continue
+                        else:
+                            break
+
+
 
                 except Exception as e:
-                    self.root.after(0, lambda: messagebox.showerror("Launch Error", f"Could not launch game:\n{e}"))
+                    print("Exception occurred:", repr(e))
+                    err_msg = f"Could not launch game:\n{e}"
+                    self.root.after(0, lambda: messagebox.showerror("Launch Error", err_msg))
 
             # Start the subprocess thread
             threading.Thread(target=run_game_and_update, args=(selected_player, selected_level), daemon=True).start()
