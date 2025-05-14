@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 
 DATA_FILE = "players.json"
 LEVELS = ["Easy", "Medium", "Hard"]
@@ -44,12 +45,23 @@ class AngryGrannyApp:
         splash.title("Loading")
         label = tk.Label(splash, text="Welcome to Angry Granny!", font=("Arial", 20))
         label.pack(expand=True)
-        splash.after(000, lambda: (splash.destroy(), self.show_main_window()))
+
+        def close_splash():
+            splash.destroy()
+            self.root.after(50, self.show_main_window)
+
+        splash.after(2000, close_splash)
 
     def show_main_window(self):
         self.root.deiconify()
+        self.root.lift()
+        self.root.focus_force()
+        self.root.update()
         self.root.title("Angry Granny")
         self.root.geometry("400x400")
+        self.root.update_idletasks()  # Force geometry/layout recalculation
+        self.root.lift()  # Bring window to front
+        self.root.focus_force()  # Ensure window is focused
 
         self.listbox = tk.Listbox(self.root, height=10, width=40)
         self.listbox.pack(pady=10)
@@ -62,6 +74,8 @@ class AngryGrannyApp:
         tk.Button(self.root, text="Delete Player", command=self.delete_player).pack(pady=5)
 
         self.update_player_list()
+        self.root.update()  # Force full GUI redraw
+        self.root.after(100, self.root.focus_force)  # Ensure focus after slight delay
 
     def update_player_list(self):
         self.listbox.delete(0, tk.END)
@@ -76,36 +90,35 @@ class AngryGrannyApp:
 
     def play_game(self):
         if self.selected_player:
-            level = self.players[self.selected_player]["current_level"]
-            messagebox.showinfo("Player Info", f"Player: {self.selected_player}\nLevel: {level}")
-            try:
-                # Launch the game and wait for it to finish
-                process = subprocess.Popen([sys.executable, "angry_granny_py5.py", self.selected_player, level])
-                process.wait()
+            selected_player = self.selected_player  # cache to avoid access issues
+            selected_level = self.players[selected_player]["current_level"]
+            messagebox.showinfo("Player Info", f"Player: {selected_player}\nLevel: {selected_level}")
 
-                # If a result file was created, read and update high scores
-                result_file = "last_score.json"
-                if os.path.exists(result_file):
-                    with open(result_file, "r") as f:
-                        result = json.load(f)
+            def run_game_and_update(player, level):
+                try:
+                    process = subprocess.Popen([sys.executable, "angry_granny_py5.py", player, level])
+                    process.wait()
 
-                    player = result["player"]
-                    level = result["level"]
-                    score = result["score"]
+                    result_file = "last_score.json"
+                    if os.path.exists(result_file):
+                        with open(result_file, "r") as f:
+                            result = json.load(f)
 
-                    current_high = self.players[player]["high_scores"].get(level, 0)
-                    if score > current_high:
-                        self.players[player]["high_scores"][level] = score
-                        save_players(self.players)
-                        messagebox.showinfo("🎉 New High Score!",
-                                            f"{player} scored {score} on {level}!\n(previous: {current_high})")
-                    else:
-                        print(f"{player} scored {score} on {level}, which did not beat {current_high}.")
+                        score = result["score"]
+                        current_high = self.players[player]["high_scores"].get(level, 0)
 
-                    os.remove(result_file)
+                        if score > current_high:
+                            self.players[player]["high_scores"][level] = score
+                            save_players(self.players)
+                            self.root.after(0, lambda: messagebox.showinfo("🎉 New High Score!",
+                                                                           f"{player} scored {score} on {level}!\n(previous: {current_high})"))
+                        os.remove(result_file)
 
-            except Exception as e:
-                messagebox.showerror("Launch Error", f"Could not launch game:\n{e}")
+                except Exception as e:
+                    self.root.after(0, lambda: messagebox.showerror("Launch Error", f"Could not launch game:\n{e}"))
+
+            # Start the subprocess thread
+            threading.Thread(target=run_game_and_update, args=(selected_player, selected_level), daemon=True).start()
 
     def add_new_player(self):
         popup = tk.Toplevel(self.root)

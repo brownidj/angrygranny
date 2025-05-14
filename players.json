@@ -15,7 +15,7 @@
     "password": "qwerpoiu",
     "current_level": "Easy",
     "high_scores": {
-      "Easy": 15,
+      "Easy": 11,
       "Medium": 0,
       "Hard": 0
     },
@@ -27,6 +27,17 @@
     "current_level": "Easy",
     "high_scores": {
       "Easy": 15,
+      "Medium": 0,
+      "Hard": 0
+    },
+    "is_admin": false
+  },
+  "Mihoko": {
+    "email": "mihoko@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "Easy",
+    "high_scores": {
+      "Easy": 10,
       "Medium": 0,
       "Hard": 0
     },
