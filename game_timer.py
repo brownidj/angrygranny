@@ -1,5 +1,6 @@
 import time
 
+
 class GameTimer:
     def __init__(self, duration_secs):
         self.duration_secs = duration_secs

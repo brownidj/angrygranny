@@ -1,14 +1,15 @@
-import time
-import tkinter as tk
-from tkinter import messagebox, simpledialog
 import json
 import os
 import subprocess
 import sys
 import threading
+import time
+import tkinter as tk
+from tkinter import messagebox, simpledialog
 
 DATA_FILE = "players.json"
 LEVELS = ["Easy", "Medium", "Hard"]
+
 
 def load_players():
     if os.path.exists(DATA_FILE) and os.path.getsize(DATA_FILE) > 0:
@@ -16,9 +17,11 @@ def load_players():
             return json.load(f)
     return {}
 
+
 def save_players(players):
     with open(DATA_FILE, "w") as f:
         json.dump(players, f, indent=2)
+
 
 def create_default_admin(players):
     if not any(p["is_admin"] for p in players.values()):
@@ -30,6 +33,7 @@ def create_default_admin(players):
             "is_admin": True
         }
         save_players(players)
+
 
 class AngryGrannyApp:
     def __init__(self, root):
@@ -43,7 +47,7 @@ class AngryGrannyApp:
     def splash_screen(self):
         splash = tk.Toplevel()
         splash.geometry("400x150")
-        splash.title("Loading")
+        splash.title("Waiting")
         label = tk.Label(splash, text="Welcome to Angry Granny!", font=("Arial", 20))
         label.pack(expand=True)
 
@@ -51,7 +55,7 @@ class AngryGrannyApp:
             splash.destroy()
             self.root.after(50, self.show_main_window)
 
-        splash.after(2000, close_splash)
+        splash.after(5000, close_splash)
 
     def show_main_window(self):
         self.root.deiconify()
@@ -104,7 +108,8 @@ class AngryGrannyApp:
                         print("Game subprocess ended.")
 
                         result_file = "last_score.json"
-                        # Read and evaluate result
+                        message = ""
+
                         if os.path.exists(result_file):
                             with open(result_file, "r") as f:
                                 result = json.load(f)
@@ -117,12 +122,14 @@ class AngryGrannyApp:
                                 self.players[player]["high_scores"][level] = score
                                 save_players(self.players)
                                 message += "🎉 Congratulations! You set a new high score!\n"
+                            else:
+                                message += f"You did not beat your current high score of {current_high}.\n"
 
                             os.remove(result_file)
+
                         else:
                             message = "Game finished, but no score was recorded.\n"
 
-                        # Append prompt and show one single dialog
                         message += "\nWould you like to play again?"
                         play_again = messagebox.askyesno("Game Over", message)
 
@@ -131,6 +138,10 @@ class AngryGrannyApp:
                             continue
                         else:
                             break
+
+                except Exception as e:
+                    err_msg = f"Could not launch game:\n{e}"
+                    self.root.after(0, lambda: messagebox.showerror("Launch Error", err_msg))
 
 
 
@@ -223,6 +234,7 @@ class AngryGrannyApp:
             self.update_player_list()
         else:
             messagebox.showerror("Incorrect Password", "Password incorrect.")
+
 
 if __name__ == "__main__":
     root = tk.Tk()

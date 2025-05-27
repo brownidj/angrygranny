@@ -1,6 +1,4 @@
-import py5
 import random
-
 
 class Ball:
     def __init__(self, x, y, radius, ball_fill):

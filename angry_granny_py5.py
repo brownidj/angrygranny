@@ -2,7 +2,7 @@ import json
 import os
 import sys
 import time
-
+from typing import Any
 
 import py5
 import pygame
@@ -88,6 +88,13 @@ def display_game_over():
     py5.text("Game Over!", py5.width / 2, py5.height / 2 - 20)
     py5.text("Final Clicks: " + str(click_count), py5.width / 2, py5.height / 2 + 20)
 
+    def save_score(f: Any, player_name: str, player_level: int, click_count: int):
+        json.dump({
+            "player": player_name,
+            "level": player_level,
+            "score": click_count
+        }, f)
+
     if not game_ended:
         # Save high score if higher
         if os.path.exists("players.json"):
@@ -98,11 +105,7 @@ def display_game_over():
                 current_high = players[player_name]["high_scores"].get(player_level, 0)
                 if click_count > current_high:
                     with open("last_score.json", "w") as f:
-                        json.dump({
-                            "player": player_name,
-                            "level": player_level,
-                            "score": click_count
-                        }, f)
+                        save_score(f, player_name, player_level, click_count)
                     print(f"New high score for {player_name} on {player_level}: {click_count}")
                 else:
                     print(f"Score {click_count} did not beat high score {current_high}")
@@ -110,5 +113,6 @@ def display_game_over():
         game_ended = True
         time.sleep(0.2)
         py5.exit_sketch()
+
 
 py5.run_sketch()
