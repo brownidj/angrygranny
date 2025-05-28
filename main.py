@@ -35,6 +35,7 @@ def create_default_admin(players):
         save_players(players)
 
 
+# Assumes load_players, save_players, create_default_admin are defined elsewhere
 class AngryGrannyApp:
     def __init__(self, root):
         self.root = root
@@ -42,45 +43,54 @@ class AngryGrannyApp:
         self.players = load_players()
         create_default_admin(self.players)
         self.selected_player = None
+        self.sound_on = True  # default sound setting
         self.splash_screen()
+
+    def show_settings(self):
+        dlg = tk.Toplevel(self.root)
+        dlg.title("Settings")
+        dlg.geometry("300x150")
+        # Sound on/off setting
+        sound_var = tk.BooleanVar(value=self.sound_on)
+        tk.Checkbutton(dlg, text="Sound On", variable=sound_var).pack(padx=10, pady=10)
+        def apply_and_close():
+            self.sound_on = sound_var.get()
+            dlg.destroy()
+        tk.Button(dlg, text="OK", command=apply_and_close).pack(pady=(0,10))
 
     def splash_screen(self):
         splash = tk.Toplevel()
         splash.geometry("400x150")
         splash.title("Waiting")
-        label = tk.Label(splash, text="Welcome to Angry Granny!", font=("Arial", 20))
-        label.pack(expand=True)
-
+        tk.Label(splash, text="Welcome to Angry Granny!", font=("Arial", 20)).pack(expand=True)
         def close_splash():
             splash.destroy()
             self.root.after(50, self.show_main_window)
-
-        splash.after(5000, close_splash)
+        splash.after(2000, close_splash)
 
     def show_main_window(self):
         self.root.deiconify()
-        self.root.lift()
-        self.root.focus_force()
-        self.root.update()
         self.root.title("Angry Granny")
         self.root.geometry("400x400")
-        self.root.update_idletasks()  # Force geometry/layout recalculation
-        self.root.lift()  # Bring window to front
-        self.root.focus_force()  # Ensure window is focused
 
+        # --- Toolbar with settings icon ---
+        toolbar = tk.Frame(self.root)
+        toolbar.pack(side=tk.TOP, fill=tk.X)
+        settings_icon = tk.Label(toolbar, text="⚙", font=("Arial", 48))
+        settings_icon.pack(side=tk.RIGHT, padx=8, pady=4)
+        settings_icon.bind("<Button-1>", lambda e: self.show_settings())
+
+        # --- Player list and controls ---
         self.listbox = tk.Listbox(self.root, height=10, width=40)
         self.listbox.pack(pady=10)
         self.listbox.bind("<<ListboxSelect>>", self.on_select)
 
         self.play_button = tk.Button(self.root, text="Play", command=self.play_game, state=tk.DISABLED)
         self.play_button.pack(pady=5)
-
         tk.Button(self.root, text="Add New Player", command=self.add_new_player).pack(pady=5)
         tk.Button(self.root, text="Delete Player", command=self.delete_player).pack(pady=5)
 
         self.update_player_list()
-        self.root.update()  # Force full GUI redraw
-        self.root.after(100, self.root.focus_force)  # Ensure focus after slight delay
 
     def update_player_list(self):
         self.listbox.delete(0, tk.END)
@@ -94,141 +104,102 @@ class AngryGrannyApp:
             self.play_button.config(state=tk.NORMAL)
 
     def play_game(self):
-        if self.selected_player:
-            selected_player = self.selected_player  # cache to avoid access issues
-            selected_level = self.players[selected_player]["current_level"]
-            messagebox.showinfo("Player Info", f"Player: {selected_player}\nLevel: {selected_level}")
+        if not self.selected_player:
+            return
+        player = self.selected_player
+        level = self.players[player]["current_level"]
 
-            def run_game_and_update(player, level):
-                try:
-                    while True:
-                        print(f"Launching game for {player} at {level}...")
-                        process = subprocess.Popen([sys.executable, "angry_granny_py5.py", player, level])
-                        process.wait()
-                        print("Game subprocess ended.")
+        def run_game_and_update(player, level):
+            try:
+                while True:
+                    print(f"Launching game for {player} at {level}...")
+                    args = [sys.executable, "angry_granny_py5.py", player, level]
+                    if not self.sound_on:
+                        args.append("--mute")
+                    proc = subprocess.Popen(args)
+                    proc.wait()
+                    print("Game subprocess ended.")
 
-                        result_file = "last_score.json"
-                        message = ""
-
-                        if os.path.exists(result_file):
-                            with open(result_file, "r") as f:
-                                result = json.load(f)
-
-                            score = result["score"]
-                            current_high = self.players[player]["high_scores"].get(level, 0)
-
-                            message = f"{player} scored {score} on {level}.\n"
-                            if score > current_high:
-                                self.players[player]["high_scores"][level] = score
-                                save_players(self.players)
-                                message += "🎉 Congratulations! You set a new high score!\n"
-                            else:
-                                message += f"You did not beat your current high score of {current_high}.\n"
-
-                            os.remove(result_file)
-
+                    result_file = "last_score.json"
+                    if os.path.exists(result_file):
+                        with open(result_file, "r") as f:
+                            res = json.load(f)
+                        score = res.get("score", 0)
+                        current_high = self.players[player]["high_scores"].get(level, 0)
+                        msg = f"{player} scored {score} on {level}.\n"
+                        if score > current_high:
+                            self.players[player]["high_scores"][level] = score
+                            save_players(self.players)
+                            msg += "🎉 Congratulations! A new high score has been recorded!"
                         else:
-                            message = "Game finished, but no score was recorded.\n"
+                            msg += f"Current high score: {current_high}."
+                        os.remove(result_file)
+                    else:
+                        msg = "Game finished but no improved score was recorded."
+                    msg += "\n\nPlay again?"
+                    again = messagebox.askyesno("Game Over", msg)
+                    if not again:
+                        break
+                    time.sleep(1)
+            except Exception as e:
+                print("Exception in game thread:", repr(e))
+                err_msg = f"Could not launch game:\n{e}"
+                self.root.after(0, lambda: messagebox.showerror("Launch Error", err_msg))
 
-                        message += "\nWould you like to play again?"
-                        play_again = messagebox.askyesno("Game Over", message)
-
-                        if play_again:
-                            time.sleep(4)
-                            continue
-                        else:
-                            break
-
-                except Exception as e:
-                    err_msg = f"Could not launch game:\n{e}"
-                    self.root.after(0, lambda: messagebox.showerror("Launch Error", err_msg))
-
-
-
-                except Exception as e:
-                    print("Exception occurred:", repr(e))
-                    err_msg = f"Could not launch game:\n{e}"
-                    self.root.after(0, lambda: messagebox.showerror("Launch Error", err_msg))
-
-            # Start the subprocess thread
-            threading.Thread(target=run_game_and_update, args=(selected_player, selected_level), daemon=True).start()
+        threading.Thread(target=run_game_and_update, args=(player, level), daemon=True).start()
 
     def add_new_player(self):
         popup = tk.Toplevel(self.root)
         popup.title("Add Player")
         popup.geometry("300x250")
-
         tk.Label(popup, text="Nickname").pack()
-        nickname_entry = tk.Entry(popup)
-        nickname_entry.pack()
-
+        nick_entry = tk.Entry(popup); nick_entry.pack()
         tk.Label(popup, text="Email").pack()
-        email_entry = tk.Entry(popup)
-        email_entry.pack()
-
+        email_entry = tk.Entry(popup); email_entry.pack()
         tk.Label(popup, text="Password").pack()
-        password_entry = tk.Entry(popup, show="*")
-        password_entry.pack()
-
+        pw_entry = tk.Entry(popup, show="*"); pw_entry.pack()
         tk.Label(popup, text="Start Level").pack()
-        level_var = tk.StringVar(popup)
-        level_var.set(LEVELS[0])
-        level_menu = tk.OptionMenu(popup, level_var, *LEVELS)
-        level_menu.pack()
-
+        lvl_var = tk.StringVar(popup); lvl_var.set(LEVELS[0])
+        tk.OptionMenu(popup, lvl_var, *LEVELS).pack()
         def submit():
-            nick = nickname_entry.get().strip()
+            nick = nick_entry.get().strip()
             email = email_entry.get().strip()
-            password = password_entry.get()
-            level = level_var.get()
-
-            if not nick or not email or not password:
+            pw = pw_entry.get()
+            lvl = lvl_var.get()
+            if not nick or not email or not pw:
                 messagebox.showerror("Error", "All fields required")
                 return
-
             if "@" not in email:
                 messagebox.showerror("Error", "Invalid email")
                 return
-
             if nick in self.players:
-                messagebox.showerror("Error", "Nickname already exists")
+                messagebox.showerror("Error", "Nickname exists")
                 return
-
-            self.players[nick] = {
-                "email": email,
-                "password": password,
-                "current_level": level,
-                "high_scores": {lvl: 0 for lvl in LEVELS},
-                "is_admin": False
-            }
+            self.players[nick] = {"email": email, "password": pw, "current_level": lvl,
+                                   "high_scores": {lvl: 0 for lvl in LEVELS}, "is_admin": False}
             save_players(self.players)
-            popup.destroy()
-            self.update_player_list()
-            self.selected_player = nick
+            popup.destroy(); self.update_player_list()
             self.select_player_in_list(nick)
-
         tk.Button(popup, text="Submit", command=submit).pack(pady=10)
 
     def select_player_in_list(self, nick):
-        index = list(self.players.keys()).index(nick)
-        self.listbox.select_set(index)
+        idx = list(self.players.keys()).index(nick)
+        self.listbox.select_set(idx)
         self.listbox.event_generate("<<ListboxSelect>>")
 
     def delete_player(self):
         if not self.selected_player:
             messagebox.showwarning("No player selected", "Select a player to delete.")
             return
-
         player = self.players[self.selected_player]
-        if player["is_admin"]:
-            messagebox.showwarning("Permission denied", "Admin cannot be deleted.")
+        if player.get("is_admin"):
+            messagebox.showwarning("Permission denied", "Cannot delete admin.")
             return
-
         pw = simpledialog.askstring("Confirm Delete", f"Enter password to delete {self.selected_player}:", show="*")
-        if pw == player["password"]:
+        if pw == player.get("password"):
             del self.players[self.selected_player]
             save_players(self.players)
-            messagebox.showinfo("Deleted", f"{self.selected_player} has been deleted.")
+            messagebox.showinfo("Deleted", f"{self.selected_player} deleted.")
             self.selected_player = None
             self.play_button.config(state=tk.DISABLED)
             self.update_player_list()
