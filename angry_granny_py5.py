@@ -7,10 +7,10 @@ from typing import Any
 import py5
 import pygame
 
-from ball import Ball
+from ball import *
 from game_timer import GameTimer
 
-# Initialize pygame mixer
+# Initialize pygame sound mixer
 pygame.mixer.init()
 # Load pop sound from assets directory
 pop_sound = pygame.mixer.Sound(os.path.join("assets", "ball.mp3"))
@@ -19,23 +19,28 @@ game_ended = False
 
 # Parse command-line args
 if len(sys.argv) >= 3:
-    player_name  = sys.argv[1]
+    print(sys.argv)
+    player_name = sys.argv[1]
     player_level = sys.argv[2]
 else:
-    player_name  = "Unknown"
+    player_name = "Unknown"
     player_level = "Unknown"
 
 # Sound setting: pass --mute to disable sounds
 sound_on = "--mute" not in sys.argv
 
 # Create ball and timer
-ball        = Ball(100, 200, 60, py5.color(255, 0, 0))
+balls = [BallRelaxed(100, 200, 60, py5.color(255, 0, 0)),
+         BallEasy(100, 200, 60, py5.color(255, 0, 0)),
+         BallMedium(100, 200, 60, py5.color(255, 0, 0)),
+         BallHard(100, 200, 60, py5.color(255, 0, 0))]
+ball = balls[2]
 click_count = 0
-game_timer  = GameTimer(10)
+game_timer = GameTimer(10)
 
 
 def setup():
-    py5.size(500, 400)
+    py5.size(1500, 400)
     py5.frame_rate(60)
     game_timer.start()
     py5.no_stroke()
@@ -63,7 +68,7 @@ def mouse_pressed():
         return
     if ball.ball_clicked(py5.mouse_x, py5.mouse_y, py5):
         click_count += 1
-        ball.change_speed()
+        ball.set_velocity()
         if sound_on:
             pop_sound.play()
 

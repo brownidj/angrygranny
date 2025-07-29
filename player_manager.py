@@ -13,16 +13,22 @@ class PlayerManager:
 
     def load(self):
         if os.path.exists(self.data_file) and os.path.getsize(self.data_file) > 0:
-            with open(self.data_file, "r") as f:
-                self.players = json.load(f)
+            with open(self.data_file, "r") as file:
+                self.players = json.load(file)
+                # print(self.players)
+                for player in self.players:
+                    print(f'{player} {self.players[player]}')
         else:
             self.players = {}
         self.create_default_admin()
 
     def save(self):
-        with open(self.data_file, "w") as f:
-            json.dump(self.players, f, indent=2)
+        with open(self.data_file, "w") as file:
+            json.dump(self.players, file, indent=2)
 
+    """
+    Check to see if there is an admin; if not create one
+    """
     def create_default_admin(self):
         if not any(p.get("is_admin") for p in self.players.values()):
             self.players["AdminGranny"] = {
