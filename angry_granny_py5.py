@@ -3,17 +3,18 @@ import os
 import sys
 import time
 from typing import Any
+from utilities import load_level_names
 
 import py5
-import pygame
+from pygame import mixer
 
 from ball import *
 from game_timer import GameTimer
 
-# Initialize pygame sound mixer
-pygame.mixer.init()
-# Load pop sound from assets directory
-pop_sound = pygame.mixer.Sound(os.path.join("assets", "ball.mp3"))
+# Initialise pygame sound-mixer
+mixer.init()
+# Load pop sound from the assets directory
+pop_sound = mixer.Sound(os.path.join("assets", "ball.mp3"))
 
 game_ended = False
 
@@ -30,17 +31,17 @@ else:
 sound_on = "--mute" not in sys.argv
 
 # Create ball and timer
-balls = [BallRelaxed(100, 200, 60, py5.color(255, 0, 0)),
-         BallEasy(100, 200, 60, py5.color(255, 0, 0)),
-         BallMedium(100, 200, 60, py5.color(255, 0, 0)),
-         BallHard(100, 200, 60, py5.color(255, 0, 0))]
-ball = balls[2]
+balls = [Ball01(100, 200, 60, py5.color(255, 0, 0)),
+         Ball02(100, 200, 60, py5.color(0, 255, 0)),
+         Ball03(100, 200, 60, py5.color(0, 0, 255)),
+         Ball04(100, 200, 60, py5.color(255, 0, 0))]
+ball = balls[1]
 click_count = 0
 game_timer = GameTimer(10)
 
 
 def setup():
-    py5.size(1500, 400)
+    py5.size(500, 400)
     py5.frame_rate(60)
     game_timer.start()
     py5.no_stroke()
@@ -73,12 +74,31 @@ def mouse_pressed():
             pop_sound.play()
 
 
+# Read level-to-name mappings from constants.txt
+# def load_level_names(filename="constants.txt"):
+#     if not os.path.exists(filename):
+#         return {}
+#     level_names = {}
+#     with open(filename, "r") as file:
+#         for line in file:
+#             if "=" in line:
+#                 key, value = [part.strip() for part in line.split("=", 1)]
+#                 level_names[key] = value
+#     return level_names
+
+
+# Load the player level mappings
+level_names = load_level_names()
+
+# Set the default player level name
+player_level_name = level_names.get(player_level, player_level)
+
+
 def display_player_info():
     py5.fill(50)
     py5.text_size(14)
     py5.text(f"Player: {player_name}", 20, 20)
-    py5.text(f"Level: {player_level}", 20, 40)
-
+    py5.text(f"Level: {player_level_name}", 20, 40)
 
 def display_click_count():
     py5.fill(0)
@@ -108,7 +128,7 @@ def display_game_over():
             "score": score
         }, f)
 
-    # Save high score if higher
+    # Save the high score if higher
     if os.path.exists("players.json"):
         with open("players.json", "r") as f:
             players = json.load(f)
@@ -117,7 +137,7 @@ def display_game_over():
             if click_count > current_high:
                 with open("last_score.json", "w") as out:
                     save_score(out, player_name, player_level, click_count)
-                print(f"New high score for {player_name} on {player_level}: {click_count}")
+                print(f"New high score for {player_name} on\n{player_level}: {click_count}")
             else:
                 print(f"Score {click_count} did not beat high score {current_high}")
 

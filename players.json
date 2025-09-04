@@ -2,44 +2,48 @@
   "AdminGranny": {
     "email": "admin@granny.com",
     "password": "admin123",
-    "current_level": "Easy",
+    "current_level": "ball01",
     "high_scores": {
-      "Easy": 0,
-      "Medium": 0,
-      "Hard": 0
+      "ball01": 0,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
     },
     "is_admin": true
   },
   "David": {
     "email": "david@granny.com",
     "password": "qwerpoiu",
-    "current_level": "Easy",
+    "current_level": "ball03",
     "high_scores": {
-      "Easy": 4,
-      "Medium": 0,
-      "Hard": 0
+      "ball01": 4,
+      "ball02": 0,
+      "ball03": 3,
+      "ball04": 0
     },
     "is_admin": false
   },
   "Teruko": {
     "email": "teruko@granny.com",
     "password": "qwerpoiu",
-    "current_level": "Easy",
+    "current_level": "ball01",
     "high_scores": {
-      "Easy": 2,
-      "Medium": 0,
-      "Hard": 0
+      "ball01": 2,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
     },
     "is_admin": false
   },
   "Mihoko": {
     "email": "mihoko@granny.com",
     "password": "qwerpoiu",
-    "current_level": "Easy",
+    "current_level": "ball01",
     "high_scores": {
-      "Easy": 2,
-      "Medium": 0,
-      "Hard": 0
+      "ball01": 2,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
     },
     "is_admin": false
   }

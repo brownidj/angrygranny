@@ -5,8 +5,8 @@ class PlayerPanel(tk.Frame):
     """
     A frame that encapsulates:
       - the player listbox
-      - Add Player dialog
-      - Delete Player dialog
+      - Add Player dialogue
+      - Delete Player dialogue
       - selection tracking
     """
     def __init__(self, parent, player_manager):
@@ -30,8 +30,9 @@ class PlayerPanel(tk.Frame):
     def reload(self):
         """Refresh list from PlayerManager."""
         self.listbox.delete(0, tk.END)
-        for nick in self.pm.get_nicks():
-            self.listbox.insert(tk.END, nick)
+        for nickname in self.pm.get_nicknames():
+            self.listbox.insert(tk.END, nickname)
+        self.listbox.update()
 
     def _on_select(self, _):
         sel = self.listbox.curselection()

@@ -40,13 +40,13 @@ class PlayerManager:
             }
             self.save()
 
-    def get_nicks(self):
+    def get_nicknames(self):
         return list(self.players.keys())
 
-    def add_player(self, nick, email, password, level):
-        if nick in self.players:
-            raise ValueError("Nickname already exists")
-        self.players[nick] = {
+    def add_player(self, nickname, email, password, level):
+        if nickname in self.players:
+            raise ValueError("nickname already exists")
+        self.players[nickname] = {
             "email": email,
             "password": password,
             "current_level": level,
@@ -55,21 +55,21 @@ class PlayerManager:
         }
         self.save()
 
-    def delete_player(self, nick, password):
-        player = self.players.get(nick)
+    def delete_player(self, nickname, password):
+        player = self.players.get(nickname)
         if not player:
             raise KeyError("Player not found")
         if player.get("is_admin"):
             raise PermissionError("Cannot delete admin")
         if player.get("password") != password:
             raise PermissionError("Incorrect password")
-        del self.players[nick]
+        del self.players[nickname]
         self.save()
 
-    def get_high_score(self, nick, level):
-        return self.players.get(nick, {}).get("high_scores", {}).get(level, 0)
+    def get_high_score(self, nickname, level):
+        return self.players.get(nickname, {}).get("high_scores", {}).get(level, 0)
 
-    def set_high_score(self, nick, level, score):
-        if nick in self.players:
-            self.players[nick]["high_scores"][level] = score
+    def set_high_score(self, nickname, level, score):
+        if nickname in self.players:
+            self.players[nickname]["high_scores"][level] = score
             self.save()

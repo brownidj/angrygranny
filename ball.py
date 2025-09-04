@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class Ball(ABC):
     """
-    Abstract base class for a bouncing ball with separate direction and velocity.
+    Abstract base class for a bouncing ball with a separate direction and velocity.
     """
     def __init__(self, x, y, radius, ball_fill):
         self.x = x
@@ -16,7 +16,7 @@ class Ball(ABC):
         # Velocity magnitudes (step sizes)
         self.x_vel = 0
         self.y_vel = 0
-        # Initialize velocity magnitudes
+        # Initialise velocity magnitudes
         self.set_velocity()
 
     def display(self, sketch):
@@ -25,7 +25,7 @@ class Ball(ABC):
 
     def move(self, sketch):
         """
-        Move ball by its velocity and direction, then handle collisions.
+        Move the ball by its velocity and direction, then handle collisions.
         """
         self.x += self.x_vel * self.x_dir
         self.y += self.y_vel * self.y_dir
@@ -68,7 +68,7 @@ class Ball(ABC):
         """
         pass
 
-class BallRelaxed(Ball):
+class Ball01(Ball):
     """
     Relaxed speed: constant velocity and direction.
     Direction only changes on collision; clicks have no effect.
@@ -78,7 +78,7 @@ class BallRelaxed(Ball):
         self.x_vel = 2.5
         self.y_vel = 1.4
 
-class BallEasy(Ball):
+class Ball02(Ball):
     """
     Easy speed: random velocity on instantiation and on click.
     Velocity resets to new random magnitudes when clicked.
@@ -99,7 +99,7 @@ class BallEasy(Ball):
         self.x_vel = random.uniform(2, 4)
         self.y_vel = random.uniform(1, 3)
 
-class BallMedium(Ball):
+class Ball03(Ball):
     """
     Medium speed: random velocity on instantiation and on click.
     Velocity resets to new random magnitudes on click; 60% chance on click to
@@ -132,7 +132,7 @@ class BallMedium(Ball):
         self.x_vel = random.uniform(3, 5)
         self.y_vel = random.uniform(2, 4)
 
-class BallHard(Ball):
+class Ball04(Ball):
 
     def set_velocity(self):
         pass

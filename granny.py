@@ -7,9 +7,10 @@ from game_launcher import GameLauncher
 from player_manager import PlayerManager
 from players_ui import PlayerPanel
 from settings_dialog import SettingsDialog
+from utilities import load_level_names
 
 DATA_FILE = "players.json"
-LEVELS = ["Easy", "Medium", "Hard"]
+LEVELS = load_level_names()
 
 
 class AngryGrannyApp:
@@ -17,12 +18,13 @@ class AngryGrannyApp:
         self.root = root
         self.root.withdraw()
 
-        # Initialize PlayerManager
+        # Initialise PlayerManager
         # Resolve data file path relative to this script
         script_dir = os.path.dirname(os.path.abspath(__file__))
         data_path = os.path.join(script_dir, DATA_FILE)
         self.pm = PlayerManager(data_file=data_path, levels=LEVELS)
         self.players = self.pm.players
+        self.player_panel = PlayerPanel(self.root, self.pm)
 
         self.selected_player = None
         self.sound_on = True  # default sound setting
@@ -58,9 +60,9 @@ class AngryGrannyApp:
     def show_main_window(self):
         # Delay UI setup until idle to ensure window is ready
         def init_ui():
-            self.root.deiconify()
-            self.root.lift()
-            self.root.focus_force()
+            self.root.deiconify()  # Show the main window
+            self.root.lift()  # Bring it to the foreground
+            self.root.after(50, self.root.focus_force)  # Force focus after a short delay
             self.root.title("Angry Granny")
             self.root.geometry("400x400")
 
@@ -75,8 +77,9 @@ class AngryGrannyApp:
             btn.bind("<Button-1>", lambda e: self.show_settings())
 
             # Player panel
-            self.player_panel = PlayerPanel(self.root, self.pm)
+            self.player_panel.reload()
             self.player_panel.pack(pady=10)
+            self.player_panel.listbox.focus_set()
             # Keep panel's own selection handler and our button toggle
             self.player_panel.listbox.bind("<<ListboxSelect>>", self.on_player_select, add="+")
 
@@ -84,11 +87,9 @@ class AngryGrannyApp:
             self.play_button = tk.Button(self.root, text="Play", command=self.play_game, state=tk.DISABLED)
             self.play_button.pack(pady=5)
 
-            # Ensure focus on listbox after UI is fully built
-            self.root.after_idle(lambda: self.player_panel.listbox.focus_set())
-
         # Schedule UI initialization once the mainloop is idle
         self.root.after_idle(init_ui)
+
 
     def on_player_select(self, event=None):
         player = self.player_panel.selected
