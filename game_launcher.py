@@ -47,21 +47,23 @@ class GameLauncher:
                         level_mapping = self.level_mappings.get(level, level)
 
                         # Update the message to use the player level mapping
-                        msg = f"{player} scored {score} on\n{level_mapping}.\n"
+                        msg = player + " scored " + str(score) + " on\n" + str(level_mapping) + ".\n"
 
                         if score > high:
                             self.pm.set_high_score(player, level, score)
-                            msg += "\n🎉 New high score!"
+                            msg += "\n" + "🎉 New high score!"
                         else:
-                            msg += f"\nCurrent high score: {high}."
+                            msg += "\nCurrent high score: " + str(high) + "."
                         os.remove(result_file)
                     else:
-                        msg = "Game finished but you didn't improve your score. Try again?."
+                        msg = "Game finished, but you didn't improve your score"
 
-                    # Prompt for replay
+                    # Prompt for replay (ask on Tk main thread)
                     msg += "\n\nPlay again?"
-                    again = messagebox.askyesno("Game Over", msg)
+                    again = self._ask_yes_no_on_main("Game Over", msg)
                     if not again:
+                        # Close all windows and end the game
+                        self._shutdown_app()
                         break
 
                     # Small delay before restarting
@@ -72,3 +74,48 @@ class GameLauncher:
                 self.root.after(0, lambda err=e: messagebox.showerror("Error", str(err)))
 
         threading.Thread(target=_game_thread, daemon=True).start()
+
+    # -------------------------------
+    # Utilities (thread-safe UI)
+    # -------------------------------
+    def _ask_yes_no_on_main(self, title: str, message: str) -> bool:
+        """Synchronously ask a yes/no dialog on the Tk main thread and return the result."""
+        result = {"ans": False}
+        done = threading.Event()
+
+        def _show():
+            try:
+                result["ans"] = messagebox.askyesno(title, message)
+            finally:
+                done.set()
+
+        self.root.after(0, _show)
+        done.wait()
+        return bool(result["ans"])
+
+    def _shutdown_app(self):
+        """Destroy all Tk windows and exit the app from the Tk main thread."""
+        def _do_shutdown():
+            try:
+                # Destroy all toplevel windows first
+                try:
+                    for w in list(self.root.winfo_children()):
+                        try:
+                            w.destroy()
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                # Quit and destroy root
+                try:
+                    self.root.quit()
+                except Exception:
+                    pass
+                try:
+                    self.root.destroy()
+                except Exception:
+                    pass
+            except Exception as e:
+                print("Error during shutdown:", e)
+        # Ensure shutdown occurs on the Tk main loop
+        self.root.after(0, _do_shutdown)
