@@ -1,5 +1,3 @@
-
-
 # ChatGPT Patch Log
 A running record of code changes applied via ChatGPT, including the explicit edits and the reasoning. Keep this under version control.
 
@@ -76,10 +74,53 @@ A running record of code changes applied via ChatGPT, including the explicit edi
 
 ---
 
-## How to use this log going forward
-- Each time ChatGPT edits your code, an entry will be appended here with:
-  - **Files updated**
-  - **What changed**
-  - **Why** (reasoning)
-  - **Exact edits** (succinct patch-style summary)
-- You can rename this file to `CHANGELOG.md` if you prefer Markdown semantics; the content is already Markdown-friendly.
+## 2025-09-18 09:05 — Add 3‑option replay dialog with level‑up support
+**Files updated:** `game_launcher.py`
+
+### What changed (high level)
+- Read per‑level thresholds from `constants.txt` entries like `max_level_ball01 = 5`.
+- After each round, if `score >= threshold` and a next level exists (up to `ball04`), show a custom modal dialog with **Exit**, **Continue**, **Level up**.
+- **Exit** quits the app; **Continue** replays the same level; **Level up** launches the next level immediately.
+- Preserved the 2‑button flow (**Continue** / **Exit**) when the threshold isn’t reached or at the top level.
+- All dialogs are created on the Tk main thread using an `Event` to block the worker safely.
+
+### Why
+- The yes/no dialog no longer fit the design once a third option (**Level up**) became necessary based on a configurable per‑level score threshold.
+
+### Exact edits (patch‑style summary)
+- In `game_launcher.py`:
+  1. **Parsing thresholds**
+     - Added `import re` and a helper `_load_level_thresholds()` to parse `constants.txt` lines matching `max_level_(ball0[1-4]) = (\d+)`.
+     - Stored thresholds in `self.level_thresholds`.
+  2. **Track current level**
+     - Introduced `current_level` local in `_game_thread` and replaced uses of `level` within the loop.
+  3. **Next level helper**
+     - Added `_get_next_level()` to map `ball01→ball02→ball03→ball04`, returning `None` at the top.
+  4. **3‑option dialog**
+     - Added `_ask_replay_choice_on_main()` to show modal **Exit / Continue / Level up** dialog when eligible; otherwise fall back to `_ask_yes_no_on_main()` for **Continue / Exit**.
+  5. **Flow integration**
+     - After computing `score`, checked eligibility and routed to the appropriate dialog; applied action (exit / continue / level up) accordingly.
+
+---
+
+## 2025-09-18 09:10 — Fix uninitialized `score` causing crash in replay dialog
+**Files updated:** `game_launcher.py`
+
+### What changed
+- Initialize `score = 0` immediately after the game subprocess finishes and before checking for `last_score.json` so level‑up logic always has a defined value.
+
+### Why
+- When no `last_score.json` was present, `score` was referenced before assignment, raising `UnboundLocalError`.
+
+### Exact edit
+- Inserted:
+  ```python
+  # Default score in case no result file is written
+  score = 0
+  ```
+  directly before:
+  ```python
+  result_file = "last_score.json"
+  if os.path.exists(result_file):
+      ...
+  ```

@@ -3,7 +3,8 @@ ball02 = Shopping with Granny
 ball03 = Granny gets Annoyed
 ball04 = Granny on the Rampage
 
-max_level_ball01 = 5
-max_level_ball02 = 5
-max_level_ball03 = 5
+max_level_ball01 = 3
+max_level_ball02 = 3
+max_level_ball03 = 3
+max_level_ball04 = 3
 
