@@ -6,5 +6,5 @@ ball04 = Granny on the Rampage
 max_level_ball01 = 3
 max_level_ball02 = 3
 max_level_ball03 = 3
-max_level_ball04 = 3
+max_level_ball04 = 3    
 

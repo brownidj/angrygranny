@@ -1,0 +1,6 @@
+# Requirements for Angry Granny game
+# Processing for Python
+py5==0.10.4a2
+
+# Game and graphics
+pygame==2.6.1

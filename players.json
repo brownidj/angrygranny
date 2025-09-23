@@ -16,8 +16,8 @@
     "password": "qwerpoiu",
     "current_level": "ball01",
     "high_scores": {
-      "ball01": 0,
-      "ball02": 0,
+      "ball01": 4,
+      "ball02": 5,
       "ball03": 0,
       "ball04": 0
     },
@@ -28,7 +28,7 @@
     "password": "qwerpoiu",
     "current_level": "ball01",
     "high_scores": {
-      "ball01": 2,
+      "ball01": 0,
       "ball02": 0,
       "ball03": 0,
       "ball04": 0
@@ -40,7 +40,7 @@
     "password": "qwerpoiu",
     "current_level": "ball01",
     "high_scores": {
-      "ball01": 2,
+      "ball01": 0,
       "ball02": 0,
       "ball03": 0,
       "ball04": 0
