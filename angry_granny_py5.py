@@ -37,7 +37,7 @@ balls = [Ball01(100, 200, 60, py5.color(255, 0, 0)),
          Ball04(100, 200, 60, py5.color(255, 0, 0))]
 ball = balls[1]
 click_count = 0
-game_timer = GameTimer()
+game_timer = GameTimer(20)
 
 
 def setup():

@@ -20,6 +20,10 @@ class GameLauncher:
         self.root = root
         self.pm = player_manager
         self.sound_on = sound_on
+        # Single-instance guards
+        self._running = threading.Event()
+        self._runner_thread = None
+        self._proc = None
         # Load level mappings once
         self.level_mappings = load_level_names()
         # Create a normalized-key view of level names so lookups work with 'ball01', 'ball_01', etc.
@@ -35,7 +39,16 @@ class GameLauncher:
         self._game_script = self._resolve_game_script_path("angry_granny_py5.py")
 
     def run(self, player: str, level: str):
+        # Prevent multiple concurrent runs (e.g., double-click on Play)
+        if self._running.is_set() or (self._runner_thread and self._runner_thread.is_alive()):
+            try:
+                self.root.after(0, lambda: messagebox.showinfo("Already running", "The game is already running. Please finish or exit the current game first."))
+            except Exception:
+                pass
+            return
+
         def _game_thread():
+            self._running.set()
             current_level = self._normalize_level_name(level)
             try:
                 while True:
@@ -44,9 +57,9 @@ class GameLauncher:
                     if not self.sound_on:
                         args.append("--mute")
 
-                    # Launch subprocess
-                    proc = subprocess.Popen(args)
-                    proc.wait()
+                    # Launch subprocess (tracked to prevent multiple instances)
+                    self._proc = subprocess.Popen(args)
+                    self._proc.wait()
 
                     # Default score in case no result file is written
                     score = 0
@@ -112,8 +125,15 @@ class GameLauncher:
             except Exception as e:
                 print("Exception in game launcher thread:", e)
                 self.root.after(0, lambda err=e: messagebox.showerror("Error", str(err)))
+            finally:
+                try:
+                    self._proc = None
+                except Exception:
+                    pass
+                self._running.clear()
 
-        threading.Thread(target=_game_thread, daemon=True).start()
+        self._runner_thread = threading.Thread(target=_game_thread, daemon=True)
+        self._runner_thread.start()
 
     # -------------------------------
     # Utilities (thread-safe UI)
@@ -268,6 +288,19 @@ class GameLauncher:
         """Destroy all Tk windows and exit the app from the Tk main thread."""
         def _do_shutdown():
             try:
+                # Attempt to terminate running py5 subprocess first
+                try:
+                    if getattr(self, "_proc", None) is not None and self._proc.poll() is None:
+                        self._proc.terminate()
+                        try:
+                            self._proc.wait(timeout=2)
+                        except Exception:
+                            try:
+                                self._proc.kill()
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
                 # Destroy all toplevel windows first
                 try:
                     for w in list(self.root.winfo_children()):
@@ -284,6 +317,10 @@ class GameLauncher:
                     pass
                 try:
                     self.root.destroy()
+                except Exception:
+                    pass
+                try:
+                    self._running.clear()
                 except Exception:
                     pass
             except Exception as e:
