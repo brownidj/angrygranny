@@ -16,7 +16,7 @@ Features
 4. League table
    * On phone
    * Online
-5. Pause/resume
+5. Pause/resume (on mobile)
    * On phone call
    * On SMS
-6. 
+6. Remove some print() statements, eg from player_manager.py, angry_granny_py5.py (23, 140-142), 

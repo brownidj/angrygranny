@@ -16,8 +16,8 @@ class PlayerManager:
             with open(self.data_file, "r") as file:
                 self.players = json.load(file)
                 # print(self.players)
-                for player in self.players:
-                    print(f'{player} {self.players[player]}')
+                # for player in self.players:
+                #     print(f'{player} {self.players[player]}')
         else:
             self.players = {}
         self.create_default_admin()

@@ -20,7 +20,7 @@ game_ended = False
 
 # Parse command-line args
 if len(sys.argv) >= 3:
-    print(sys.argv)
+    # print(sys.argv)
     player_name = sys.argv[1]
     player_level = sys.argv[2]
 else:
@@ -37,7 +37,7 @@ balls = [Ball01(100, 200, 60, py5.color(255, 0, 0)),
          Ball04(100, 200, 60, py5.color(255, 0, 0))]
 ball = balls[1]
 click_count = 0
-game_timer = GameTimer(20)
+game_timer = GameTimer(10)
 
 
 def setup():
@@ -137,9 +137,9 @@ def display_game_over():
             if click_count > current_high:
                 with open("last_score.json", "w") as out:
                     save_score(out, player_name, player_level, click_count)
-                print(f"New high score for {player_name} on\n{player_level}: {click_count}")
-            else:
-                print(f"Score {click_count} did not beat high score {current_high}")
+                # print(f"New high score for {player_name} on\n{player_level}: {click_count}")
+            # else:
+            #     print(f"Score {click_count} did not beat high score {current_high}")
 
     # Brief delay then exit
     game_ended = True

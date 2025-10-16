@@ -5,7 +5,8 @@ import sys
 import threading
 import time
 import re
-from tkinter import messagebox
+from tkinter import messagebox, DISABLED, NORMAL
+import tkinter as tk
 
 from utilities import load_level_names  # Import the utility function
 
@@ -76,7 +77,8 @@ class GameLauncher:
                         level_mapping = self.level_mappings_norm.get(current_level, current_level)
 
                         # Update the message to use the player level mapping
-                        msg = player + " scored " + str(score) + " on\n" + str(level_mapping) + ".\n"
+                        # msg = player + " scored " + str(score) + " on\n" + str(level_mapping) + ".\n"
+                        msg = player + " scored " + str(score) + " on " + str(level_mapping) + ".\n"
 
                         if score > high:
                             self.pm.set_high_score(player, current_level, score)
@@ -94,31 +96,57 @@ class GameLauncher:
                     if threshold is not None and score >= threshold and next_level is not None:
                         can_level_up = True
 
+                    # if can_level_up:
+                    #     # 3-option dialog: Exit / Continue / Level up
+                    #     msg += "\n\nYou reached the score required to level up."
+                    #     msg += "\nRequired: " + str(threshold) + ", You scored: " + str(score) + "."
+                    #     msg += "\n\nChoose: Exit, Continue, or Level up."
+                    #     choice = self._ask_replay_choice_on_main("Game Over", msg, show_level_up=True)
+                    #     if choice == "exit":
+                    #         self._shutdown_app()
+                    #         break
+                    #     elif choice == "level_up":
+                    #         current_level = next_level
+                    #         # brief pause before starting next level
+                    #         time.sleep(1)
+                    #         continue
+                    #     else:
+                    #         # continue same level
+                    #         time.sleep(1)
+                    #         continue
+                    # else:
+                    #     # 2-option dialog: Continue Level / Exit
+                    #     msg += "\n\nDo you want to continue?"
+                    #     again = self._ask_yes_no_on_main("Game Over", msg)
+                    #     if not again:
+                    #         self._shutdown_app()
+                    #         break
+                    #     time.sleep(1)
+                    #     continue
+
+                    # One dialog for all cases; Level up button disabled when not allowed
                     if can_level_up:
-                        # 3-option dialog: Exit / Continue / Level up
-                        msg += "\n\nYou reached the score required to level up."
-                        msg += "\nRequired: " + str(threshold) + ", You scored: " + str(score) + "."
-                        msg += "\n\nChoose: Exit, Continue, or Level up."
-                        choice = self._ask_replay_choice_on_main("Game Over", msg, show_level_up=True)
-                        if choice == "exit":
-                            self._shutdown_app()
-                            break
-                        elif choice == "level_up":
-                            current_level = next_level
-                            # brief pause before starting next level
-                            time.sleep(1)
-                            continue
-                        else:
-                            # continue same level
-                            time.sleep(1)
-                            continue
+                        msg += ("\n\nYou can level up!"
+                                f"\n(Required: {threshold}, You scored: {score}.)"
+                                "\n\nChoose: Exit, Continue, or Level up.")
                     else:
-                        # 2-option dialog: Continue Level / Exit
-                        msg += "\n\nDo you want to continue?"
-                        again = self._ask_yes_no_on_main("Game Over", msg)
-                        if not again:
-                            self._shutdown_app()
-                            break
+                        msg += ""
+
+                    choice = self._ask_end_of_round_on_main("Game Over",
+                                                            msg,
+                                                            can_level_up=can_level_up,
+                                                            default="continue")
+
+                    if choice == "exit":
+                        self._shutdown_app()
+                        break
+                    elif choice == "level_up":
+                        # only possible if can_level_up=True; otherwise the button is disabled
+                        current_level = next_level
+                        time.sleep(1)
+                        continue
+                    else:
+                        # 'continue' – replay current_level
                         time.sleep(1)
                         continue
 
@@ -224,6 +252,88 @@ class GameLauncher:
         self.root.after(0, _show_dialog)
         done.wait()
         return result.get("choice", "continue")
+
+    def _ask_end_of_round_on_main(self, title: str, message: str, *, can_level_up: bool,
+                                  default: str = "continue") -> str:
+        """
+        Show one modal dialog on the Tk main thread with buttons:
+          [Exit]  [Continue]  [Level up]
+        - 'Level up' is disabled unless can_level_up=True.
+        - Returns one of: 'exit' | 'continue' | 'level_up'
+        - `default` can be 'continue' or 'exit' (sets initial focus)
+        """
+
+
+        result = {"choice": "continue"}
+        done = threading.Event()
+
+        def _show():
+            win = tk.Toplevel(self.root)
+            win.title(title)
+            win.transient(self.root)
+            win.grab_set()
+            win.resizable(False, False)
+
+            # Message
+            frm = tk.Frame(win, padx=16, pady=12)
+            frm.pack(fill=tk.BOTH, expand=True)
+            lbl = tk.Label(frm, text=message, justify=tk.LEFT, anchor="w")
+            lbl.pack(fill=tk.BOTH, expand=True)
+
+            # Buttons row
+            btn_row = tk.Frame(frm)
+            btn_row.pack(fill=tk.X, pady=(12, 0))
+
+            def _choose(val):
+                result["choice"] = val
+                try:
+                    win.grab_release()
+                except Exception:
+                    pass
+                win.destroy()
+                done.set()
+
+            # Exit (left)
+            btn_exit = tk.Button(btn_row, text="Exit", width=12, command=lambda: _choose("exit"))
+            btn_exit.pack(side=tk.LEFT, padx=4)
+
+            # Continue (middle)
+            btn_continue = tk.Button(btn_row, text="Continue", width=14, command=lambda: _choose("continue"))
+            btn_continue.pack(side=tk.LEFT, padx=4)
+
+            # Level up (right) — disabled unless can_level_up
+            state = NORMAL if can_level_up else DISABLED
+            btn_level = tk.Button(btn_row, text="Level up", width=12, state=state, command=lambda: _choose("level_up"))
+            btn_level.pack(side=tk.RIGHT, padx=4)
+
+            # Default focus
+            if default == "exit":
+                btn_exit.focus_set()
+            else:
+                btn_continue.focus_set()
+
+            # Keyboard shortcuts
+            win.bind("<Return>", lambda e: _choose(default))
+            win.bind("<Escape>", lambda e: _choose("exit"))
+
+            # Close = Exit
+            win.protocol("WM_DELETE_WINDOW", lambda: _choose("exit"))
+
+            # Center on root
+            try:
+                win.update_idletasks()
+                rx, ry = self.root.winfo_rootx(), self.root.winfo_rooty()
+                rw, rh = self.root.winfo_width(), self.root.winfo_height()
+                ww, wh = win.winfo_width(), win.winfo_height()
+                x = rx + max(0, (rw - ww) // 2)
+                y = ry + max(0, (rh - wh) // 2)
+                win.geometry(f"+{x}+{y}")
+            except Exception:
+                pass
+
+        self.root.after(0, _show)
+        done.wait()
+        return result["choice"]
 
     def _load_level_thresholds(self):
         """Parse constants.txt for lines like 'max_level_ball01 = 5' and return dict { 'ball01': 5, ... }"""
