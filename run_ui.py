@@ -1,11 +1,11 @@
+import json
 import os
 import sys
-import json
 
 from PySide6.QtCore import QFile
 from PySide6.QtCore import QLibraryInfo
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton
 from PySide6.QtWidgets import QListWidget, QLineEdit
 
 
@@ -17,6 +17,7 @@ def apply_styles(app):
             app.setStyleSheet(bytes(qss_file.readAll()).decode())
         finally:
             qss_file.close()
+
 
 def load_players_index():
     """
@@ -86,7 +87,6 @@ def load_players_index():
     return index, names
 
 
-
 def update_selected_player_level_edit(window):
     lst = window.findChild(QListWidget, "listPlayers")
     level_edit = window.findChild(QLineEdit, "editLevel")
@@ -107,6 +107,7 @@ def update_selected_player_level_edit(window):
                 lvl = rec[key]
                 break
     level_edit.setText("" if lvl is None else str(lvl))
+
 
 def populate_players_list(window):
     _, names = load_players_index()
@@ -136,21 +137,51 @@ if plugins:
     os.environ.setdefault("QT_QPA_PLATFORM_PLUGIN_PATH", os.path.join(plugins, "platforms"))
 
 
+def open_main_portrait_from_splash(splash):
+    loader = QUiLoader()
+    ui_file = QFile("ui/main_portrait.ui")
+    if not ui_file.open(QFile.ReadOnly):
+        print("Error: could not open ui/main_portrait.ui")
+        return
+    main_window = loader.load(ui_file)
+    ui_file.close()
+    if not isinstance(main_window, QWidget):
+        print("Error: main_portrait.ui did not load correctly.")
+        return
+    populate_players_list(main_window)
+    # Keep a reference so it is not garbage collected
+    splash._main_window = main_window
+    main_window.show()
+    splash.close()
+
+
+def make_splash_screeen(loader: QUiLoader) -> QWidget:
+    splash_file = QFile("ui/splash_portrait.ui")
+    if not splash_file.open(QFile.ReadOnly):
+        print("Error: could not open ui/splash_portrait.ui")
+        sys.exit(1)
+    splash = loader.load(splash_file)
+    splash_file.close()
+
+    if not isinstance(splash, QWidget):
+        print("Error: splash_portrait.ui did not load correctly.")
+        sys.exit(1)
+
+    btn = splash.findChild(QPushButton, "btnLetsPlay")
+    if btn is None:
+        print("Warning: btnLetsPlay button not found in splash_portrait.ui")
+    else:
+        btn.clicked.connect(lambda: open_main_portrait_from_splash(splash))
+    return splash
+
+
 def main():
     app = QApplication(sys.argv)
     apply_styles(app)
     loader = QUiLoader()
-    # ui_file = QFile("ui/main_landscape.ui")
-    ui_file = QFile("ui/main_portrait.ui")
-    ui_file.open(QFile.ReadOnly)
-    window = loader.load(ui_file)
-    populate_players_list(window)
-    ui_file.close()
 
-    if isinstance(window, QWidget):
-        window.show()
-    else:
-        print("Error: UI file did not load correctly.")
+    splash = make_splash_screeen(loader)
+    splash.show()
 
     sys.exit(app.exec())
 

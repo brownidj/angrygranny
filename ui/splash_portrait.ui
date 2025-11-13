@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>SplashWindow</class>
+    <widget class="QMainWindow" name="SplashWindow">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>640</width>
+                <height>1280</height>
+            </rect>
+        </property>
+        <property name="minimumWidth">
+            <number>640</number>
+        </property>
+        <property name="maximumWidth">
+            <number>640</number>
+        </property>
+        <property name="windowTitle">
+            <string>Angry Granny</string>
+        </property>
+        <property name="styleSheet">
+            <string notr="true">QMainWindow#SplashWindow { background-color: #C2F4F4; }</string>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <property name="spacing">
+                    <number>0</number>
+                </property>
+                <property name="contentsMargins">
+                    <rect>
+                        <x>0</x>
+                        <y>0</y>
+                        <width>0</width>
+                        <height>0</height>
+                    </rect>
+                </property>
+                <item>
+                    <widget class="QLabel" name="labelAreYouFast">
+                        <property name="text">
+                            <string>Are you fast enough?</string>
+                        </property>
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
+                        <property name="font">
+                            <font>
+                                <pointsize>48</pointsize>
+                            </font>
+                        </property>
+                        <property name="styleSheet">
+                            <string notr="true">
+                                QLabel#labelAreYouFast {
+                                color: white;
+                                background-color: #0047AB;
+                                font-weight: bold;
+                                }
+                            </string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QLabel" name="labelSplashImage">
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
+                        <property name="pixmap">
+                            <pixmap>assets/super_granny.png</pixmap>
+                        </property>
+                        <property name="scaledContents">
+                            <bool>false</bool>
+                        </property>
+                    </widget>
+                </item>
+            </layout>
+        </widget>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>
