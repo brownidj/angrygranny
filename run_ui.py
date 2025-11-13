@@ -155,7 +155,7 @@ def open_main_portrait_from_splash(splash):
     splash.close()
 
 
-def make_splash_screeen(loader: QUiLoader) -> QWidget:
+def make_splash_screen(loader: QUiLoader) -> QWidget:
     splash_file = QFile("ui/splash_portrait.ui")
     if not splash_file.open(QFile.ReadOnly):
         print("Error: could not open ui/splash_portrait.ui")
@@ -180,7 +180,7 @@ def main():
     apply_styles(app)
     loader = QUiLoader()
 
-    splash = make_splash_screeen(loader)
+    splash = make_splash_screen(loader)
     splash.show()
 
     sys.exit(app.exec())
