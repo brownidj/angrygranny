@@ -1,3 +1,4 @@
+import random
 from PySide6.QtCore import QTimer, Qt, QUrl
 from PySide6.QtGui import QPainter, QColor, QFont
 from PySide6.QtMultimedia import QSoundEffect
@@ -20,6 +21,7 @@ class GameWidget(QWidget):
         self.player_name = ""
         self.level_name = ""
         self.rules = rules   # <-- add this line
+        self.ball_color = QColor("#FF6666")
 
         # Sound effect for ball hits
         self._hit_sound = QSoundEffect(self)
@@ -34,10 +36,19 @@ class GameWidget(QWidget):
         # Game state will be initialised lazily on first resize
         self.state = None
 
-        # 60 FPS timer
+        # 120 FPS timer
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._on_tick)
-        self._timer.start(16)  # ~60 fps
+        self._timer.start(8)   # ~120 fps
+
+        # Track last frame time for real delta timing
+        self._last_time = None
+
+        # Countdown phase before gameplay starts
+        self._phase = "countdown"
+        self._ready_texts = ["Ready?", "Steady?", "Go!"]
+        self._ready_index = 0
+        self._ready_timer = 1.5  # seconds per word
 
     def set_player_and_level(self, player: str, level: str):
         self.player_name = player or ""
@@ -59,9 +70,49 @@ class GameWidget(QWidget):
     def _on_tick(self):
         if self.width() <= 0 or self.height() <= 0:
             return
+
+        # Countdown handling: Ready / Steady / Go
+        if self._phase == "countdown":
+            import time
+            current = time.perf_counter()
+            if self._last_time is None:
+                dt = 1.0 / 120.0
+            else:
+                dt = current - self._last_time
+            self._last_time = current
+
+            if dt > 0.05:
+                dt = 0.05
+
+            self._ready_timer -= dt
+            if self._ready_timer <= 0:
+                self._ready_index += 1
+                if self._ready_index >= len(self._ready_texts):
+                    self._phase = "play"
+                    self._last_time = None
+                else:
+                    self._ready_timer = 1.5
+
+            self.update()
+            return
+
         self._ensure_state()
-        # Update with a fixed dt (approx 1/60s)
-        self.state.update(1.0 / 60.0)
+
+        # Real delta-timing for smooth animation
+        now = QTimer.remainingTime(self._timer)  # dummy call to access QtCore
+        import time
+        current = time.perf_counter()
+        if self._last_time is None:
+            dt = 1.0 / 120.0
+        else:
+            dt = current - self._last_time
+        self._last_time = current
+
+        # Clamp dt to avoid huge jumps on window stall
+        if dt > 0.05:
+            dt = 0.05
+
+        self.state.update(dt)
         self.update()
 
     def mousePressEvent(self, event):
@@ -72,6 +123,12 @@ class GameWidget(QWidget):
                 if self._hit_sound is not None:
                     self._hit_sound.stop()
                     self._hit_sound.play()
+                # On a successful hit, change the ball to a random colour
+                self.ball_color = QColor(
+                    random.randint(0, 255),
+                    random.randint(0, 255),
+                    random.randint(0, 255),
+                )
             else:
                 if self._miss_sound is not None:
                     self._miss_sound.stop()
@@ -85,14 +142,29 @@ class GameWidget(QWidget):
         # Background
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
 
+        # Countdown phase: Ready / Steady / Go
+        if self._phase == "countdown":
+            painter.setPen(Qt.black)
+            font = QFont()
+            font.setPointSize(48)
+            painter.setFont(font)
+
+            text = self._ready_texts[self._ready_index]
+            painter.drawText(self.rect(), Qt.AlignCenter, text)
+
+            painter.end()
+            return
+
+        # Ensure game state exists for normal play mode
+        self._ensure_state()
         if self.state is None:
             painter.end()
             return
 
         b = self.state.ball
 
-        # Draw ball
-        painter.setBrush(QColor("#FF6666"))
+        # Draw ball (normal play mode)
+        painter.setBrush(self.ball_color)
         painter.setPen(Qt.black)
         painter.drawEllipse(
             int(b.x - b.radius),

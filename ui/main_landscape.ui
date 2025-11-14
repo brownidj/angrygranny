@@ -147,14 +147,20 @@
                                                     </widget>
                                                 </item>
                                                 <item>
-                                                    <widget class="QLineEdit" name="lineLevel">
-                                                        <property name="readOnly">
-                                                            <bool>true</bool>
-                                                        </property>
-                                                        <property name="placeholderText">
-                                                            <string>Level</string>
-                                                        </property>
-                                                    </widget>
+                                                <widget class="QLineEdit" name="lineLevel">
+                                                    <property name="readOnly">
+                                                        <bool>true</bool>
+                                                    </property>
+                                                    <property name="placeholderText">
+                                                        <string>Level</string>
+                                                    </property>
+                                                    <property name="minimumSize">
+                                                        <size>
+                                                            <width>250</width>
+                                                            <height>0</height>
+                                                        </size>
+                                                    </property>
+                                                </widget>
                                                 </item>
                                             </layout>
                                         </widget>

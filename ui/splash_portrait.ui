@@ -73,21 +73,85 @@
                     </widget>
                 </item>
                 <item>
-                <spacer name="betweenImageAndButtonSpacer">
-                    <property name="orientation">
-                        <enum>Qt::Vertical</enum>
-                    </property>
-                    <property name="sizeType">
-                        <enum>QSizePolicy::Fixed</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                        <size>
-                            <width>20</width>
-                            <height>12</height>
-                        </size>
-                    </property>
-                </spacer>
-            </item>
+                    <spacer name="betweenImageAndTextSpacer">
+                        <property name="orientation">
+                            <enum>Qt::Vertical</enum>
+                        </property>
+                        <property name="sizeType">
+                            <enum>QSizePolicy::Fixed</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                            <size>
+                                <width>20</width>
+                                <height>12</height>
+                            </size>
+                        </property>
+                    </spacer>
+                </item>
+                <item>
+                    <widget class="QLabel" name="labelGlasses1">
+                        <property name="text">
+                            <string>I don't have my glasses on.</string>
+                        </property>
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
+                        <property name="font">
+                            <font>
+                                <pointsize>42</pointsize>
+                            </font>
+                        </property>
+                        <property name="styleSheet">
+                            <string notr="true">
+                                QLabel#labelAreYouFast {
+                                color: white;
+                                background-color: #0047AB;
+                                font-weight: bold;
+                                }
+                            </string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QLabel" name="labelGlasses2">
+                        <property name="text">
+                            <string>{name}, dearie, is that you?</string>
+                        </property>
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
+                        <property name="font">
+                            <font>
+                                <pointsize>42</pointsize>
+                            </font>
+                        </property>
+                        <property name="styleSheet">
+                            <string notr="true">
+                                QLabel#labelAreYouFast {
+                                color: white;
+                                background-color: #0047AB;
+                                font-weight: bold;
+                                }
+                            </string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <spacer name="betweenImageAndButtonSpacer">
+                        <property name="orientation">
+                            <enum>Qt::Vertical</enum>
+                        </property>
+                        <property name="sizeType">
+                            <enum>QSizePolicy::Fixed</enum>
+                        </property>
+                        <property name="sizeHint" stdset="0">
+                            <size>
+                                <width>20</width>
+                                <height>12</height>
+                            </size>
+                        </property>
+                    </spacer>
+                </item>
                 <item>
                     <layout class="QHBoxLayout" name="playButtonLayout">
                         <item>
@@ -127,7 +191,53 @@
                                         QPushButton#btnLetsPlay {
                                         border-radius: 12px;
                                         padding: 8px 16px;
-                                        background-color: #FFFFFF;
+                                        background-color: #00FF00;
+                                        }
+                                    </string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <spacer name="betweenButtonsSpacer">
+                                <property name="orientation">
+                                    <enum>Qt::Horizontal</enum>
+                                </property>
+                                <property name="sizeType">
+                                    <enum>QSizePolicy::Fixed</enum>
+                                </property>
+                                <property name="sizeHint" stdset="0">
+                                    <size>
+                                        <width>20</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                        </item>
+                        <item>
+                            <widget class="QPushButton" name="btnNotMe">
+                                <property name="sizePolicy">
+                                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                        <horstretch>0</horstretch>
+                                        <verstretch>0</verstretch>
+                                    </sizepolicy>
+                                </property>
+                                <property name="text">
+                                    <string>Not me!</string>
+                                </property>
+                                <property name="minimumHeight">
+                                    <number>48</number>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <pointsize>48</pointsize>
+                                    </font>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">
+                                        QPushButton#btnNotMe {
+                                        border-radius: 12px;
+                                        padding: 8px 16px;
+                                        background-color: #FF0000;
                                         }
                                     </string>
                                 </property>

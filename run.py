@@ -1,6 +1,38 @@
 import json
 import os
 import sys
+import yaml
+
+# Helper to set is_current_player flag in players.yaml
+def set_current_player_flag(selected_name: str):
+    """
+    Update data/players.yaml so that only the selected player has
+    is_current_player: true, and all others are set to false.
+    """
+    path = os.path.join(os.getcwd(), "data", "players.yaml")
+    if not os.path.exists(path):
+        print("Warning: data/players.yaml not found")
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except Exception as e:
+        print("Warning: failed to read players.yaml:", str(e))
+        return
+
+    if not isinstance(data, dict):
+        print("Warning: players.yaml format not understood")
+        return
+
+    for name, rec in data.items():
+        if isinstance(rec, dict):
+            rec["is_current_player"] = (name == selected_name)
+
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, sort_keys=False)
+    except Exception as e:
+        print("Warning: failed to write players.yaml:", str(e))
 
 from PySide6.QtCore import QFile, Qt, QLibraryInfo, QPropertyAnimation
 from PySide6.QtUiTools import QUiLoader
@@ -8,6 +40,25 @@ from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QLineEdit, QTa
 from PySide6.QtGui import QPixmap
 from game_widget import GameWidget
 from game_state import Ball01Rules, Ball02Rules, Ball03Rules, Ball04Rules
+
+LEVEL_LABELS = {
+    "ball01": "Tea with Granny",
+    "ball02": "Shopping with Granny",
+    "ball03": "Granny gets Annoyed",
+    "ball04": "Granny on the Rampage",
+}
+
+
+def get_level_label(level_code: str) -> str:
+    """
+    Map an internal level code (e.g. 'ball01') to a friendly label
+    (e.g. 'Tea with Granny'). Falls back to the raw code if unknown.
+    """
+    if not level_code:
+        return ""
+    key = str(level_code).lower()
+    return LEVEL_LABELS.get(key, str(level_code))
+
 
 
 def apply_styles(app):
@@ -20,9 +71,42 @@ def apply_styles(app):
             qss_file.close()
 
 
+# --- Toast helper ----------------------------------------------------------
+
+from PySide6.QtCore import QTimer, Qt
+from PySide6.QtWidgets import QLabel
+
+def show_toast(parent, message: str, duration_ms: int = 2000):
+    """
+    Show a temporary toast-style message inside the given parent window.
+    """
+    toast = QLabel(parent)
+    toast.setText(message)
+    toast.setStyleSheet(
+        "background-color: rgba(0, 0, 0, 180);"
+        "color: white;"
+        "padding: 8px 14px;"
+        "border-radius: 8px;"
+        "font-size: 14pt;"
+    )
+    toast.setAlignment(Qt.AlignCenter)
+    toast.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+    toast.adjustSize()
+    pw = parent.width()
+    ph = parent.height()
+    tw = toast.width()
+    th = toast.height()
+
+    toast.move(pw // 2 - tw // 2, ph - th - 40)
+    toast.show()
+
+    QTimer.singleShot(duration_ms, toast.close)
+
+
 def load_players_index():
     """
-    Load players from players.json and return:
+    Load players from data/players.yaml and return:
       - index: dict mapping player name -> record dict (may be empty dict)
       - names: list of names in a stable order
     Supports shapes:
@@ -33,21 +117,21 @@ def load_players_index():
       * {"players": ["Alice", "Bob", ...]} or ["Alice", "Bob", ...]
     """
     candidates = [
-        os.path.join(os.getcwd(), "players.json"),
-        os.path.join(os.getcwd(), "data", "players.json"),
+        os.path.join(os.getcwd(), "data", "players.yaml"),
+        os.path.join(os.getcwd(), "players.yaml"),
     ]
     data = None
     for path in candidates:
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                    data = yaml.safe_load(f)
                 break
             except Exception as e:
                 print("Warning: failed to load " + path + ": " + str(e))
                 return {}, []
     if data is None:
-        print("Warning: players.json not found in project root or data/")
+        print("Warning: players.yaml not found in data/ or project root")
         return {}, []
 
     index = {}
@@ -111,6 +195,7 @@ def update_selected_player_details(window):
         return
 
     name = item.text()
+    set_current_player_flag(name)
     idx, _ = load_players_index()
     rec = idx.get(name) or {}
 
@@ -155,13 +240,20 @@ def populate_players_list(window):
     if not table:
         print("Warning: listPlayers (QTableWidget) not found in main_portrait.ui")
         return
+    # Ensure full-row selection so selected row uses QSS highlight (white on blue)
+    from PySide6.QtWidgets import QAbstractItemView
+    table.setSelectionBehavior(QAbstractItemView.SelectRows)
+    table.setSelectionMode(QAbstractItemView.SingleSelection)
 
     table.clearContents()
     table.setRowCount(len(names))
 
     row = 0
+    current_player_name = None
     for name in names:
         rec = idx.get(name) or {}
+        if isinstance(rec, dict) and rec.get("is_current_player") is True:
+            current_player_name = name
 
         # Determine the current level for this player
         current_level = None
@@ -202,9 +294,28 @@ def populate_players_list(window):
         pass
     table.itemSelectionChanged.connect(lambda: update_selected_player_details(window))
 
-    if table.rowCount() > 0:
-        table.setCurrentCell(0, 0)
-    update_selected_player_details(window)
+    # Select the current player row if flagged; otherwise leave nothing selected
+    if table.rowCount() > 0 and current_player_name:
+        target_row = 0
+        for r in range(table.rowCount()):
+            item = table.item(r, 0)
+            if item is not None and item.text() == current_player_name:
+                target_row = r
+                break
+        table.setCurrentCell(target_row, 0)
+        table.setFocus()
+        table.repaint()
+        # Ensure the selected row is visible (e.g. for long player lists)
+        selected_item = table.item(target_row, 0)
+        if selected_item is not None:
+            table.scrollToItem(selected_item)
+        update_selected_player_details(window)
+    else:
+        # No current player flagged: ensure Play stays disabled and hint to select
+        btn_play = window.findChild(QPushButton, "btnPlay")
+        if btn_play is not None:
+            btn_play.setEnabled(False)
+        show_toast(window, "Select a player")
 
 
 # Force Qt to the correct plugin folders
@@ -283,8 +394,12 @@ def populate_high_scores_for_level(landscape_window: QWidget):
     if line_level is None:
         print("Warning: lineLevel not found in landscape window")
         return
-    level_name = line_level.text().strip()
-    if not level_name:
+
+    # Prefer the raw level code stored as a property; fall back to the text
+    level_code = line_level.property("level_code")
+    if not level_code:
+        level_code = line_level.text().strip()
+    if not level_code:
         print("Warning: no level specified in lineLevel")
         return
 
@@ -304,7 +419,7 @@ def populate_high_scores_for_level(landscape_window: QWidget):
         hs_map = rec.get("high_scores", {})
         if not isinstance(hs_map, dict):
             continue
-        score = hs_map.get(level_name)
+        score = hs_map.get(level_code)
         if isinstance(score, (int, float)) and score > 0:
             rows.append((name, score))
 
@@ -356,7 +471,7 @@ def populate_high_scores_for_level(landscape_window: QWidget):
 
         # Align rank and score nicely
         rank_item.setTextAlignment(Qt.AlignCenter)
-        score_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        score_item.setTextAlignment(Qt.AlignCenter)
 
         table.setItem(row_idx, 0, rank_item)
         table.setItem(row_idx, 1, name_item)
@@ -411,7 +526,10 @@ def open_main_landscape_from_portrait(main_window: QWidget):
                 line_player.setText(name_item.text())
 
             if line_level is not None and level_item is not None:
-                line_level.setText(level_item.text())
+                raw_level = level_item.text()
+                # Store the raw level code and show a friendly label
+                line_level.setProperty("level_code", raw_level)
+                line_level.setText(get_level_label(raw_level))
 
             # Populate High Scores for this level
             populate_high_scores_for_level(landscape_window)
@@ -448,10 +566,17 @@ def open_main_landscape_from_portrait(main_window: QWidget):
     line_player = landscape_window.findChild(QLineEdit, "linePlayer")
     line_level = landscape_window.findChild(QLineEdit, "lineLevel")
     player_name = line_player.text() if line_player is not None else ""
-    level_name = line_level.text() if line_level is not None else ""
+    level_label = line_level.text() if line_level is not None else ""
 
-    # Choose difficulty rules based on the level name
-    level_key = (level_name or "").lower()
+    # Retrieve the raw level code from the lineLevel property if available
+    level_code = None
+    if line_level is not None:
+        level_code = line_level.property("level_code")
+    if not level_code:
+        level_code = level_label
+
+    # Choose difficulty rules based on the raw level code
+    level_key = (level_code or "").lower()
     if "ball01" in level_key or level_key == "1":
         rules = Ball01Rules()
     elif "ball02" in level_key or level_key == "2":
@@ -467,9 +592,9 @@ def open_main_landscape_from_portrait(main_window: QWidget):
     # Create game widget with the chosen rules
     game = GameWidget(parent=game_area, rules=rules)
 
-    # Pass player and level into the game if available
+    # Pass player and (friendly) level label into the game if available
     if hasattr(game, "set_player_and_level"):
-        game.set_player_and_level(player_name, level_name)
+        game.set_player_and_level(player_name, level_label)
 
     layout.addWidget(game)
     landscape_window._game_widget = game
@@ -488,7 +613,10 @@ def open_main_landscape_from_portrait(main_window: QWidget):
     main_window.hide()
     landscape_window.show()
 
-def open_main_portrait_from_splash(splash):
+def open_main_portrait_from_splash(splash, clear_current=False):
+    if clear_current:
+        # Clear any persisted current player so no one is pre-selected
+        set_current_player_flag("__NONE__")
     loader = QUiLoader()
     ui_file = QFile("ui/main_portrait.ui")
     if not ui_file.open(QFile.ReadOnly):
@@ -509,13 +637,37 @@ def open_main_portrait_from_splash(splash):
     if btn_play is None:
         print("Warning: btnPlay button not found in main_portrait.ui")
     else:
-        btn_play.clicked.connect(lambda: open_main_landscape_from_portrait(main_window))
+        # Only allow Play if a player is selected; otherwise show a toast
+        def _on_play():
+            table = main_window.findChild(QTableWidget, "listPlayers")
+            if table is None or table.currentRow() < 0:
+                show_toast(main_window, "Select a player")
+                return
+            open_main_landscape_from_portrait(main_window)
+
+        btn_play.clicked.connect(_on_play)
         btn_play.setEnabled(False)
     # Keep a reference so it is not garbage collected
     splash._main_window = main_window
     main_window.show()
     splash.close()
 
+
+def open_main_landscape_from_splash(splash: QWidget):
+    """
+    From the splash screen, go straight to the landscape game view.
+    This reuses the portrait->landscape pipeline so that:
+      - the current player (if any) is respected
+      - the gameArea, Go Back, and GameWidget are fully wired
+    """
+    # First, open the portrait window WITHOUT clearing the current player
+    open_main_portrait_from_splash(splash, clear_current=False)
+
+    # Retrieve the portrait window created by open_main_portrait_from_splash
+    main_window = getattr(splash, "_main_window", None)
+    if isinstance(main_window, QWidget):
+        # Immediately transition to the landscape view for that portrait window
+        open_main_landscape_from_portrait(main_window)
 
 def make_splash_screen(loader: QUiLoader) -> QWidget:
     splash_file = QFile("ui/splash_portrait.ui")
@@ -525,6 +677,28 @@ def make_splash_screen(loader: QUiLoader) -> QWidget:
     splash = loader.load(splash_file)
     splash_file.close()
 
+    # Personalise labelGlasses2 with current player's name if present
+    label2 = splash.findChild(QLabel, "labelGlasses2")
+    if label2 is not None:
+        # Attempt to read current player name
+        try:
+            path = os.path.join(os.getcwd(), "data", "players.yaml")
+            current_name = None
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    pdata = yaml.safe_load(f)
+                if isinstance(pdata, dict):
+                    for nm, rec in pdata.items():
+                        if isinstance(rec, dict) and rec.get("is_current_player") is True:
+                            current_name = nm
+                            break
+            # Replace placeholder {name} in label text
+            if current_name:
+                base = label2.text()
+                label2.setText(base.replace("{name}", current_name))
+        except Exception:
+            pass
+
     if not isinstance(splash, QWidget):
         print("Error: splash_portrait.ui did not load correctly.")
         sys.exit(1)
@@ -533,7 +707,14 @@ def make_splash_screen(loader: QUiLoader) -> QWidget:
     if btn is None:
         print("Warning: btnLetsPlay button not found in splash_portrait.ui")
     else:
-        btn.clicked.connect(lambda: open_main_portrait_from_splash(splash))
+        btn.clicked.connect(lambda: open_main_landscape_from_splash(splash))
+
+    btn_not_me = splash.findChild(QPushButton, "btnNotMe")
+    if btn_not_me is None:
+        print("Warning: btnNotMe button not found in splash_portrait.ui")
+    else:
+        btn_not_me.clicked.connect(lambda: open_main_portrait_from_splash(splash, True))
+
     return splash
 
 
