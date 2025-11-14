@@ -71,7 +71,8 @@
                             <bool>false</bool>
                         </property>
                     </widget>
-                </item><item>
+                </item>
+                <item>
                 <spacer name="betweenImageAndButtonSpacer">
                     <property name="orientation">
                         <enum>Qt::Vertical</enum>

@@ -14,7 +14,7 @@ from game_timer import GameTimer
 # Initialise pygame sound-mixer
 mixer.init()
 # Load pop sound from the assets directory
-pop_sound = mixer.Sound(os.path.join("assets", "ball.mp3"))
+pop_sound = mixer.Sound(os.path.join("assets", "hit.wav"))
 
 game_ended = False
 

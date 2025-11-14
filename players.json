@@ -17,13 +17,49 @@
     "current_level": "ball02",
     "high_scores": {
       "ball01": 6,
-      "ball02": 8,
+      "ball02": 9,
       "ball03": 0,
       "ball04": 0
     },
     "is_admin": false
   },
   "Teruko": {
+    "email": "teruko@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball01",
+    "high_scores": {
+      "ball01": 27,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Mihoko": {
+    "email": "mihoko@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball01",
+    "high_scores": {
+      "ball01": 0,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Alex": {
+    "email": "david@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball02",
+    "high_scores": {
+      "ball01": 6,
+      "ball02": 8,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Barb": {
     "email": "teruko@granny.com",
     "password": "qwerpoiu",
     "current_level": "ball01",
@@ -35,7 +71,79 @@
     },
     "is_admin": false
   },
-  "Mihoko": {
+  "Charlie": {
+    "email": "mihoko@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball01",
+    "high_scores": {
+      "ball01": 0,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Francine": {
+    "email": "david@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball02",
+    "high_scores": {
+      "ball01": 6,
+      "ball02": 8,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Geraldine": {
+    "email": "teruko@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball01",
+    "high_scores": {
+      "ball01": 0,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Henry": {
+    "email": "mihoko@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball01",
+    "high_scores": {
+      "ball01": 0,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Ines": {
+    "email": "david@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball02",
+    "high_scores": {
+      "ball01": 6,
+      "ball02": 8,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Jessica": {
+    "email": "teruko@granny.com",
+    "password": "qwerpoiu",
+    "current_level": "ball01",
+    "high_scores": {
+      "ball01": 0,
+      "ball02": 0,
+      "ball03": 0,
+      "ball04": 0
+    },
+    "is_admin": false
+  },
+  "Larry": {
     "email": "mihoko@granny.com",
     "password": "qwerpoiu",
     "current_level": "ball01",
