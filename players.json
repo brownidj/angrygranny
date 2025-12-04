@@ -17,7 +17,7 @@
     "current_level": "ball02",
     "high_scores": {
       "ball01": 6,
-      "ball02": 9,
+      "ball02": 8,
       "ball03": 0,
       "ball04": 0
     },
@@ -28,7 +28,7 @@
     "password": "qwerpoiu",
     "current_level": "ball01",
     "high_scores": {
-      "ball01": 27,
+      "ball01": 0,
       "ball02": 0,
       "ball03": 0,
       "ball04": 0
@@ -143,7 +143,7 @@
     },
     "is_admin": false
   },
-  "Larry": {
+  "Mihoko": {
     "email": "mihoko@granny.com",
     "password": "qwerpoiu",
     "current_level": "ball01",

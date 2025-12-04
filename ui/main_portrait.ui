@@ -25,31 +25,23 @@
                             <property name="placeholderText">
                                 <string>Search players…</string>
                             </property>
+                            <property name="maximumWidth">
+                                <number>200</number>
+                            </property>
                         </widget>
                     </item>
                     <item>
-                        <widget class="QComboBox" name="comboSort">
-                            <item>
-                                <property name="text">
-                                    <string>Name</string>
-                                </property>
-                            </item>
-                            <item>
-                                <property name="text">
-                                    <string>Level</string>
-                                </property>
-                            </item>
-                            <item>
-                                <property name="text">
-                                    <string>Last Played</string>
-                                </property>
-                            </item>
-                            <item>
-                                <property name="text">
-                                    <string>High Score</string>
-                                </property>
-                            </item>
-                        </widget>
+                        <spacer name="searchAddSpacer">
+                            <property name="orientation">
+                                <enum>Qt::Horizontal</enum>
+                            </property>
+                            <property name="sizeHint" stdset="0">
+                                <size>
+                                    <width>20</width>
+                                    <height>20</height>
+                                </size>
+                            </property>
+                        </spacer>
                     </item>
                     <item>
                         <widget class="QPushButton" name="btnAdd">

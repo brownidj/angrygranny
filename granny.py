@@ -7,7 +7,7 @@ from game_launcher import GameLauncher
 from player_manager import PlayerManager
 from players_ui import PlayerPanel
 from settings_dialog import SettingsDialog
-from utilities import load_level_names
+from utils.load_level_names import load_level_names
 
 DATA_FILE = "players.json"
 LEVELS = load_level_names()

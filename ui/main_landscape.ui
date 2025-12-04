@@ -179,16 +179,16 @@
                                         </spacer>
                                     </item>
                                     <item>
-                                        <widget class="QPushButton" name="btnStartGame">
+                                        <widget class="QPushButton" name="btnPlayAgain">
                                             <property name="text">
-                                                <string>Start</string>
+                                                <string>Play Again</string>
                                             </property>
                                         </widget>
                                     </item>
                                     <item>
-                                        <widget class="QPushButton" name="btnGoBack">
+                                        <widget class="QPushButton" name="btnPlayersList">
                                             <property name="text">
-                                                <string>Go Back</string>
+                                                <string>Players' list</string>
                                             </property>
                                         </widget>
                                     </item>

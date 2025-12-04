@@ -42,22 +42,38 @@ from game_widget import GameWidget
 from game_state import Ball01Rules, Ball02Rules, Ball03Rules, Ball04Rules
 
 LEVEL_LABELS = {
-    "ball01": "Tea with Granny",
-    "ball02": "Shopping with Granny",
-    "ball03": "Granny gets Annoyed",
-    "ball04": "Granny on the Rampage",
+    "ball01": ["Tea with Granny", "Tea"],
+    "ball02": ["Shopping with Granny", "Shopping"],
+    "ball03": ["Granny gets Annoyed", "Annoyed"],
+    "ball04": ["Granny on the Rampage", "Rampage"],
 }
 
 
 def get_level_label(level_code: str) -> str:
-    """
-    Map an internal level code (e.g. 'ball01') to a friendly label
-    (e.g. 'Tea with Granny'). Falls back to the raw code if unknown.
-    """
+    """Return the full, friendly label for a level code (e.g. 'Tea with Granny')."""
     if not level_code:
         return ""
     key = str(level_code).lower()
-    return LEVEL_LABELS.get(key, str(level_code))
+    entry = LEVEL_LABELS.get(key)
+    if isinstance(entry, (list, tuple)) and entry:
+        return entry[0]  # full label
+    if isinstance(entry, str):
+        return entry
+    return str(level_code)
+
+
+# Helper to get the short label for a level code
+def get_level_short_label(level_code: str) -> str:
+    """Return the short label for a level code (e.g. 'Tea')."""
+    if not level_code:
+        return ""
+    key = str(level_code).lower()
+    entry = LEVEL_LABELS.get(key)
+    if isinstance(entry, (list, tuple)) and len(entry) > 1:
+        return entry[1]
+    if isinstance(entry, str):
+        return entry
+    return str(level_code)
 
 
 
@@ -234,8 +250,12 @@ def update_selected_player_details(window):
         btn_play.setEnabled(True)
 
 
-def populate_players_list(window):
+def populate_players_list(window, filter_text: str = ""):
     idx, names = load_players_index()
+    # Apply optional case-insensitive name filter (search only by player name)
+    ft = (filter_text or "").strip().lower()
+    if ft:
+        names = [n for n in names if ft in n.lower()]
     table = window.findChild(QTableWidget, "listPlayers")
     if not table:
         print("Warning: listPlayers (QTableWidget) not found in main_portrait.ui")
@@ -277,7 +297,14 @@ def populate_players_list(window):
         score_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
         table.setItem(row, 0, name_item)
         table.setItem(row, 1, score_item)
-        level_item = QTableWidgetItem("" if current_level is None else str(current_level))
+        # Show a short, friendly label in the Level column but keep the raw code as user data
+        if current_level is None:
+            level_text = ""
+        else:
+            level_text = get_level_short_label(current_level)
+        level_item = QTableWidgetItem(level_text)
+        if current_level:
+            level_item.setData(Qt.UserRole, str(current_level))
         table.setItem(row, 2, level_item)
         row = row + 1
 
@@ -288,11 +315,19 @@ def populate_players_list(window):
     table.sortItems(0)  # sort by player name column
 
     # Connect selection change to detail updater
-    try:
-        table.itemSelectionChanged.disconnect()
-    except Exception:
-        pass
-    table.itemSelectionChanged.connect(lambda: update_selected_player_details(window))
+    # Only connect once per table instance to avoid duplicate calls and warnings.
+    if not hasattr(table, "_selection_connected"):
+        table.itemSelectionChanged.connect(lambda: update_selected_player_details(window))
+        table._selection_connected = True
+
+    # If there's exactly one visible player after filtering, auto-select it
+    ft = (filter_text or "").strip().lower()
+    if table.rowCount() == 1 and ft:
+        table.setCurrentCell(0, 0)
+        table.setFocus()
+        table.repaint()
+        update_selected_player_details(window)
+        return
 
     # Select the current player row if flagged; otherwise leave nothing selected
     if table.rowCount() > 0 and current_player_name:
@@ -311,11 +346,21 @@ def populate_players_list(window):
             table.scrollToItem(selected_item)
         update_selected_player_details(window)
     else:
-        # No current player flagged: ensure Play stays disabled and hint to select
+        # No current player flagged or visible under this filter: disable Play
         btn_play = window.findChild(QPushButton, "btnPlay")
         if btn_play is not None:
             btn_play.setEnabled(False)
-        show_toast(window, "Select a player")
+        # Only show the toast when there is no active filter (initial state)
+        ft = (filter_text or "").strip()
+        if not ft:
+            print("[DEBUG] No current player flagged; Play disabled, showing toast")
+            show_toast(window, "Select a player")
+
+    # Final safeguard: ensure Play is enabled if and only if a row is selected
+    btn_play = window.findChild(QPushButton, "btnPlay")
+    if btn_play is not None:
+        has_selection = table.currentRow() >= 0
+        btn_play.setEnabled(has_selection)
 
 
 # Force Qt to the correct plugin folders
@@ -330,6 +375,7 @@ def exit_with_fade(main_window: QWidget):
     Show a sad granny image inside the main window and fade it out
     over 5 seconds, then quit the application cleanly.
     """
+    print(f"[DEBUG] exit_with_fade called on {main_window.objectName()}")
     app = QApplication.instance()
     if app is None:
         main_window.close()
@@ -354,11 +400,14 @@ def exit_with_fade(main_window: QWidget):
     label.setAlignment(Qt.AlignCenter)
     pixmap = QPixmap(os.path.join("assets", "sad_granny.png"))
     if not pixmap.isNull():
+        print(f"[DEBUG] sad_granny.png loaded, original size={pixmap.size()}")
         # Scale to fit within 80% of the main window, keeping aspect ratio
         target_width = int(main_window.width() * 0.8)
         target_height = int(main_window.height() * 0.8)
         scaled = pixmap.scaled(target_width, target_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         label.setPixmap(scaled)
+    else:
+        print("[DEBUG] ERROR: sad_granny.png failed to load!")
     layout.addWidget(label)
 
     overlay.show()
@@ -375,11 +424,13 @@ def exit_with_fade(main_window: QWidget):
     anim.setEndValue(0.0)
 
     def on_finished():
+        print("[DEBUG] Fade animation finished; closing overlay and quitting app")
         overlay.close()
         app.quit()
 
     anim.finished.connect(on_finished)
     overlay._fade_animation = anim
+    print("[DEBUG] Starting fade animation…")
     anim.start()
 
 
@@ -526,8 +577,11 @@ def open_main_landscape_from_portrait(main_window: QWidget):
                 line_player.setText(name_item.text())
 
             if line_level is not None and level_item is not None:
-                raw_level = level_item.text()
-                # Store the raw level code and show a friendly label
+                # Prefer the raw level code stored as user data; fall back to the cell text
+                raw_level = level_item.data(Qt.UserRole)
+                if not raw_level:
+                    raw_level = level_item.text()
+                # Store the raw level code and show the full, friendly label in the line edit
                 line_level.setProperty("level_code", raw_level)
                 line_level.setText(get_level_label(raw_level))
 
@@ -562,49 +616,69 @@ def open_main_landscape_from_portrait(main_window: QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-    # Read player and level from the landscape UI
-    line_player = landscape_window.findChild(QLineEdit, "linePlayer")
-    line_level = landscape_window.findChild(QLineEdit, "lineLevel")
-    player_name = line_player.text() if line_player is not None else ""
-    level_label = line_level.text() if line_level is not None else ""
+    def _create_or_replace_game_widget():
+        """Create a new GameWidget for the current player/level, replacing any existing one."""
+        # Remove existing game widget, if any
+        old_game = getattr(landscape_window, "_game_widget", None)
+        if isinstance(old_game, QWidget):
+            old_game.setParent(None)
+            old_game.deleteLater()
 
-    # Retrieve the raw level code from the lineLevel property if available
-    level_code = None
-    if line_level is not None:
-        level_code = line_level.property("level_code")
-    if not level_code:
-        level_code = level_label
+        # Read player from the landscape UI
+        line_player = landscape_window.findChild(QLineEdit, "linePlayer")
+        line_level = landscape_window.findChild(QLineEdit, "lineLevel")
+        player_name = line_player.text() if line_player is not None else ""
 
-    # Choose difficulty rules based on the raw level code
-    level_key = (level_code or "").lower()
-    if "ball01" in level_key or level_key == "1":
-        rules = Ball01Rules()
-    elif "ball02" in level_key or level_key == "2":
-        rules = Ball02Rules()
-    elif "ball03" in level_key or level_key == "3":
-        rules = Ball03Rules()
-    elif "ball04" in level_key or level_key == "4":
-        rules = Ball04Rules()
+        # Retrieve the raw level code from the lineLevel property if available
+        level_code = None
+        if line_level is not None:
+            level_code = line_level.property("level_code")
+
+        # Choose difficulty rules based on the raw level code
+        level_key = (level_code or "").lower()
+        if "ball01" in level_key or level_key == "1":
+            rules = Ball01Rules()
+        elif "ball02" in level_key or level_key == "2":
+            rules = Ball02Rules()
+        elif "ball03" in level_key or level_key == "3":
+            rules = Ball03Rules()
+        elif "ball04" in level_key or level_key == "4":
+            rules = Ball04Rules()
+        else:
+            # Default to easiest rules if level is unknown
+            rules = Ball01Rules()
+
+        # Create game widget with the chosen rules
+        game = GameWidget(parent=game_area, rules=rules)
+
+        # Pass player and (friendly) full level label into the game if available
+        if hasattr(game, "set_player_and_level"):
+            display_label = get_level_label(level_code)
+            game.set_player_and_level(player_name, display_label)
+
+        layout.addWidget(game)
+        landscape_window._game_widget = game
+
+    # Initial game widget creation
+    _create_or_replace_game_widget()
+
+    # Wire up Players List button to return to the portrait view
+    btn_players_list = landscape_window.findChild(QPushButton, "btnPlayersList")
+    if btn_players_list is None:
+        print("Warning: btnPlayersList button not found in main_landscape.ui")
     else:
-        # Default to easiest rules if level is unknown
-        rules = Ball01Rules()
+        btn_players_list.clicked.connect(lambda: go_back_to_portrait(landscape_window))
 
-    # Create game widget with the chosen rules
-    game = GameWidget(parent=game_area, rules=rules)
-
-    # Pass player and (friendly) level label into the game if available
-    if hasattr(game, "set_player_and_level"):
-        game.set_player_and_level(player_name, level_label)
-
-    layout.addWidget(game)
-    landscape_window._game_widget = game
-
-    # Wire up Go Back button to return to the portrait view
-    btn_go_back = landscape_window.findChild(QPushButton, "btnGoBack")
-    if btn_go_back is None:
-        print("Warning: btnGoBack button not found in main_landscape.ui")
+    # Wire up Play Again button to restart a round at the same level for the same player
+    btn_play_again = landscape_window.findChild(QPushButton, "btnPlayAgain")
+    if btn_play_again is None:
+        print("Warning: btnPlayAgain button not found in main_landscape.ui")
     else:
-        btn_go_back.clicked.connect(lambda: go_back_to_portrait(landscape_window))
+        def _on_play_again():
+            print("[DEBUG] Play Again clicked - restarting round for same player/level")
+            _create_or_replace_game_widget()
+
+        btn_play_again.clicked.connect(_on_play_again)
 
     # Keep a reference so it is not garbage collected
     main_window._landscape_window = landscape_window
@@ -628,6 +702,23 @@ def open_main_portrait_from_splash(splash, clear_current=False):
         print("Error: main_portrait.ui did not load correctly.")
         return
     populate_players_list(main_window)
+    # Wire up live, case-insensitive filtering of players by name
+    search_edit = main_window.findChild(QLineEdit, "editSearch")
+    if search_edit is None:
+        search_edit = main_window.findChild(QLineEdit, "lineSearch")
+    if search_edit is not None:
+        # Show a built-in clear (X) icon to erase the search text
+        try:
+            search_edit.setClearButtonEnabled(True)
+        except Exception:
+            pass
+
+        def _on_search(text: str):
+            # Filter only by player name, ignoring case
+            populate_players_list(main_window, text)
+        search_edit.textChanged.connect(_on_search)
+    else:
+        print("Warning: search QLineEdit (editSearch/lineSearch) not found in main_portrait.ui")
     # Wire up Exit button in gameOutcome group box with fade-out animation
     btn_exit = main_window.findChild(QPushButton, "btnExit")
     if btn_exit is not None:
@@ -676,6 +767,7 @@ def make_splash_screen(loader: QUiLoader) -> QWidget:
         sys.exit(1)
     splash = loader.load(splash_file)
     splash_file.close()
+
 
     # Personalise labelGlasses2 with current player's name if present
     label2 = splash.findChild(QLabel, "labelGlasses2")

@@ -3,7 +3,7 @@ import os
 import sys
 import time
 from typing import Any
-from utilities import load_level_names
+from utils.load_level_names import load_level_names
 
 import py5
 from pygame import mixer

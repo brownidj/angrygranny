@@ -8,7 +8,7 @@ import re
 from tkinter import messagebox, DISABLED, NORMAL
 import tkinter as tk
 
-from utilities import load_level_names  # Import the utility function
+from utils.load_level_names import load_level_names  # Import the utility function
 
 
 class GameLauncher:
