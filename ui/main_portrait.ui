@@ -10,7 +10,8 @@
                 <x>0</x>
                 <y>0</y>
                 <width>640</width>
-                <height>1280</height>
+<!--                <height>1280</height>-->
+                <height>1000</height>
             </rect>
         </property>
         <property name="styleSheet">

@@ -9,7 +9,8 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>1280</width>
+<!--                <width>1280</width>-->
+                <width>1000</width>
                 <height>640</height>
             </rect>
         </property>
@@ -188,7 +189,7 @@
                                     <item>
                                         <widget class="QPushButton" name="btnPlayersList">
                                             <property name="text">
-                                                <string>Players' list</string>
+                                                <string>Choose Another Player</string>
                                             </property>
                                         </widget>
                                     </item>

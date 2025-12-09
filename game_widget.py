@@ -6,7 +6,7 @@ try:
 except ImportError:
     yaml = None
 
-from PySide6.QtCore import QTimer, Qt, QUrl, QRect
+from PySide6.QtCore import QTimer, Qt, QUrl, QRect, Signal
 from PySide6.QtGui import QPainter, QColor, QFont, QPixmap
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import QWidget
@@ -32,6 +32,9 @@ class GameWidget(QWidget):
     Qt-based visual wrapper around GameState.
     Draws the ball, timer and clicks; handles mouse clicks.
     """
+
+    # Emitted once at the end of each round: (player_name, level_name, score)
+    roundFinished = Signal(str, str, int)
 
     def __init__(self, parent=None, rules=None):
         super().__init__(parent)
@@ -101,6 +104,9 @@ class GameWidget(QWidget):
         self._ready_texts = ["Ready?", "Steady?", "Go!"]
         self._ready_index = 0
         self._ready_timer = 1.5  # seconds per word
+
+        # Track whether we've already emitted the roundFinished signal for this round
+        self._round_over_emitted = False
 
     def set_player_and_level(self, player: str, level: str):
         self.player_name = player or ""
@@ -212,6 +218,14 @@ class GameWidget(QWidget):
 
         self.state.update(dt)
         self._update_grenade(dt)
+
+        # Detect transition to game over and emit score exactly once per round
+        if self.state.remaining <= 0.0 and not self._round_over_emitted:
+            self._round_over_emitted = True
+            score = int(getattr(self.state, "clicks", 0))
+            print(f"[DEBUG] Round finished: player={self.player_name}, level={self.level_name}, score={score}")
+            self.roundFinished.emit(self.player_name or "", self.level_name or "", score)
+
         self.update()
 
     def _start_new_round(self):
@@ -219,6 +233,8 @@ class GameWidget(QWidget):
         Reset per-round timers and schedule grenade animations for ball04.
         Called when we transition from countdown to play.
         """
+        # New round: allow a fresh roundFinished signal
+        self._round_over_emitted = False
         self._round_elapsed = 0.0
         self._grenade_active = False
         self._grenade_frame = 0

@@ -1,3 +1,88 @@
+
+
+def update_player_high_score(level_code: str, player_name: str, score: int, landscape_window: "QWidget | None" = None):
+    """Update the high score for a player/level in players.yaml if the new score is higher.
+
+    If landscape_window is provided, refresh the High Scores table for that level
+    and repopulate the portrait Players list.
+    """
+    if not level_code or not player_name:
+        print(f"[DEBUG] Skipping update_player_high_score: missing level or player (level={level_code!r}, player={player_name!r})")
+        return
+
+    candidates = [
+        os.path.join(os.getcwd(), "data", "players.yaml"),
+        os.path.join(os.getcwd(), "players.yaml"),
+    ]
+    path = None
+    data = None
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+                path = p
+                break
+            except Exception as e:
+                print("Warning: failed to read players file", p, ":", str(e))
+                return
+
+    if path is None or data is None:
+        print("Warning: players.yaml not found; cannot update high score")
+        return
+
+    # Locate the players dictionary inside the loaded structure
+    players_dict = None
+    if isinstance(data, dict):
+        if "players" in data and isinstance(data["players"], dict):
+            players_dict = data["players"]
+        else:
+            players_dict = data
+    else:
+        print("Warning: players.yaml format not understood for high score update")
+        return
+
+    rec = players_dict.get(player_name)
+    if not isinstance(rec, dict):
+        print(f"Warning: no record found for player {player_name!r} in players.yaml")
+        return
+
+    hs = rec.get("high_scores")
+    if not isinstance(hs, dict):
+        hs = {}
+        rec["high_scores"] = hs
+
+    old_val = hs.get(level_code, 0)
+    if not isinstance(old_val, (int, float)):
+        old_val = 0
+
+    if score <= old_val:
+        print(f"[DEBUG] Not updating high score for {player_name!r} at {level_code!r}: {score} <= {old_val}")
+        return
+
+    hs[level_code] = int(score)
+    print(f"[DEBUG] Updated high score for {player_name!r} at {level_code!r}: {old_val} -> {score}")
+
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, sort_keys=False)
+    except Exception as e:
+        print("Warning: failed to write players.yaml:", str(e))
+        return
+
+    # Refresh UI if a landscape_window is provided
+    if landscape_window is not None:
+        try:
+            populate_high_scores_for_level(landscape_window)
+        except Exception as e:
+            print("Warning: failed to refresh high scores table:", str(e))
+
+        portrait = getattr(landscape_window, "_portrait_window", None)
+        if isinstance(portrait, QWidget):
+            try:
+                populate_players_list(portrait)
+            except Exception as e:
+                print("Warning: failed to refresh players list:", str(e))
 import json
 import os
 import sys
@@ -430,8 +515,13 @@ def exit_with_fade(main_window: QWidget):
 
     anim.finished.connect(on_finished)
     overlay._fade_animation = anim
-    print("[DEBUG] Starting fade animation…")
-    anim.start()
+
+    def _start_fade_animation():
+        print("[DEBUG] Starting fade animation…")
+        anim.start()
+
+    # Wait 1 second before starting the fade-out, so the image is visible
+    QTimer.singleShot(1000, _start_fade_animation)
 
 
 def populate_high_scores_for_level(landscape_window: QWidget):
@@ -655,6 +745,29 @@ def open_main_landscape_from_portrait(main_window: QWidget):
         if hasattr(game, "set_player_and_level"):
             display_label = get_level_label(level_code)
             game.set_player_and_level(player_name, display_label)
+
+        # When the round finishes, update the player's high score for this level
+        def _on_round_finished(player_name_sig: str, level_label_sig: str, score_sig: int, lw=landscape_window):
+            # Determine raw level code from the landscape UI property
+            line_level_sig = lw.findChild(QLineEdit, "lineLevel")
+            raw_code = None
+            if line_level_sig is not None:
+                raw_code = line_level_sig.property("level_code")
+
+            # Fallback: try to infer from the full label if property is missing
+            if not raw_code and level_label_sig:
+                for code, entry in LEVEL_LABELS.items():
+                    full_label = entry[0] if isinstance(entry, (list, tuple)) and entry else entry
+                    if full_label == level_label_sig:
+                        raw_code = code
+                        break
+
+            update_player_high_score(raw_code, player_name_sig, score_sig, lw)
+
+        try:
+            game.roundFinished.connect(_on_round_finished)
+        except Exception as e:
+            print("Warning: failed to connect roundFinished signal:", str(e))
 
         layout.addWidget(game)
         landscape_window._game_widget = game

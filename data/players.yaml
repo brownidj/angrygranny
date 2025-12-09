@@ -12,10 +12,10 @@ Mum:
 David:
   email: david@granny.com
   password: qwerpoiu
-  current_level: ball04
+  current_level: ball01
   high_scores:
-    ball01: 6
-    ball02: 9
+    ball01: 10
+    ball02: 0
     ball03: 0
     ball04: 0
   is_admin: false
