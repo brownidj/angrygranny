@@ -85,14 +85,15 @@ class Ball02(Ball):
     """
     def on_click(self):
         """
-        On click, reset velocity and 30% chance to reverse travel direction.
+        On click, reset velocity and 30% chance to reverse
+        travel direction.
         """
-        # Reset velocity magnitudes
-        super().on_click()
         # 30% chance to reverse direction
-        if random.random() < 0.3:
+        if random.random() < 0.9:
             self.x_dir *= -1
             self.y_dir *= -1
+        # Reset velocity magnitudes
+        super().on_click()
 
     def set_velocity(self):
         # Set velocity magnitudes once

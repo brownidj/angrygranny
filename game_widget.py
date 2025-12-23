@@ -1,10 +1,5 @@
 import random
-import pathlib
-
-try:
-    import yaml
-except ImportError:
-    yaml = None
+# (legacy settings support removed)
 
 from PySide6.QtCore import QTimer, Qt, QUrl, QRect, Signal
 from PySide6.QtGui import QPainter, QColor, QFont, QPixmap
@@ -36,7 +31,7 @@ class GameWidget(QWidget):
     # Emitted once at the end of each round: (player_name, level_name, score)
     roundFinished = Signal(str, str, int)
 
-    def __init__(self, parent=None, rules=None):
+    def __init__(self, parent=None, rules=None, duration: float | None = None):
         super().__init__(parent)
         self.setAttribute(Qt.WA_OpaquePaintEvent, True)
         self.setMouseTracking(True)
@@ -74,7 +69,20 @@ class GameWidget(QWidget):
         self._grenade_dest_rect = None
 
         # Track elapsed time in the current round (play phase only)
-        self._round_duration = self._load_round_duration_from_settings()
+        # Duration precedence:
+        #   1) explicit duration passed by caller (run.py from data/levels.yaml)
+        #   2) rules.duration if provided by rules object
+        #   3) settings.yaml fallback (legacy)
+        if duration is not None:
+            self._round_duration = float(duration)
+        elif self.rules is not None and hasattr(self.rules, "duration"):
+            try:
+                self._round_duration = float(getattr(self.rules, "duration"))
+            except Exception:
+                self._round_duration = self._load_round_duration_from_settings()
+        else:
+            self._round_duration = self._load_round_duration_from_settings()
+
         self._round_elapsed = 0.0
         print(f"[DEBUG] Round duration set to {self._round_duration:0.2f}s")
 
@@ -91,13 +99,16 @@ class GameWidget(QWidget):
         # Game state will be initialised lazily on first resize
         self.state = None
 
-        # 120 FPS timer
+        # 120 FPS timer (use highest precision available)
         self._timer = QTimer(self)
+        self._timer.setTimerType(Qt.PreciseTimer)
         self._timer.timeout.connect(self._on_tick)
         self._timer.start(8)   # ~120 fps
 
-        # Track last frame time for real delta timing
-        self._last_time = None
+        # High-resolution timer for smooth delta timing
+        from PySide6.QtCore import QElapsedTimer
+        self._elapsed_timer = QElapsedTimer()
+        self._elapsed_timer.start()
 
         # Countdown phase before gameplay starts
         self._phase = "countdown"
@@ -115,48 +126,11 @@ class GameWidget(QWidget):
 
     def _load_round_duration_from_settings(self) -> float:
         """
-        Load round duration (in seconds) from settings.yaml if available.
-        Falls back to a default of 20.0 seconds if the file or key is missing
-        or if PyYAML is not installed.
-        Expected YAML structure examples:
-
-        round_duration: 20
-        # or
-        game:
-          round_duration: 20
+        Legacy fallback only.
+        Round duration is now expected to come from data/levels.yaml via run.py.
+        This method exists solely to guarantee a safe default if nothing is provided.
         """
-        default_duration = 20.0
-
-        # If yaml is not available, just return the default.
-        if yaml is None:
-            return default_duration
-
-        try:
-            base_dir = pathlib.Path(__file__).resolve().parent
-            settings_path = base_dir / "settings.yaml"
-            if not settings_path.exists():
-                return default_duration
-
-            with settings_path.open("r", encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
-
-            if not isinstance(data, dict):
-                return default_duration
-
-            # Try flat key first
-            if "round_duration" in data:
-                return float(data["round_duration"])
-
-            # Then nested under a 'game' block
-            game_cfg = data.get("game") or data.get("angry_granny")
-            if isinstance(game_cfg, dict) and "round_duration" in game_cfg:
-                return float(game_cfg["round_duration"])
-
-        except Exception:
-            # Any error (parsing, conversion, etc.) falls back to default.
-            return default_duration
-
-        return default_duration
+        return 20.0
 
     def _ensure_state(self):
         if self.state is None:
@@ -176,14 +150,7 @@ class GameWidget(QWidget):
 
         # Countdown handling: Ready / Steady / Go
         if self._phase == "countdown":
-            import time
-            current = time.perf_counter()
-            if self._last_time is None:
-                dt = 1.0 / 120.0
-            else:
-                dt = current - self._last_time
-            self._last_time = current
-
+            dt = self._elapsed_timer.restart() / 1000.0  # ms -> seconds
             if dt > 0.05:
                 dt = 0.05
 
@@ -192,7 +159,7 @@ class GameWidget(QWidget):
                 self._ready_index += 1
                 if self._ready_index >= len(self._ready_texts):
                     self._phase = "play"
-                    self._last_time = None
+                    self._elapsed_timer.restart()
                     self._start_new_round()
                 else:
                     self._ready_timer = 1.5
@@ -202,17 +169,10 @@ class GameWidget(QWidget):
 
         self._ensure_state()
 
-        # Real delta-timing for smooth animation
-        now = QTimer.remainingTime(self._timer)  # dummy call to access QtCore
-        import time
-        current = time.perf_counter()
-        if self._last_time is None:
-            dt = 1.0 / 120.0
-        else:
-            dt = current - self._last_time
-        self._last_time = current
+        # Real delta-timing for smooth animation (Qt high-resolution clock)
+        dt = self._elapsed_timer.restart() / 1000.0  # ms -> seconds
 
-        # Clamp dt to avoid huge jumps on window stall
+        # Clamp dt to avoid visible jumps if the event loop stalls
         if dt > 0.05:
             dt = 0.05
 

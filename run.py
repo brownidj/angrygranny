@@ -83,10 +83,53 @@ def update_player_high_score(level_code: str, player_name: str, score: int, land
                 populate_players_list(portrait)
             except Exception as e:
                 print("Warning: failed to refresh players list:", str(e))
+
 import json
 import os
 import sys
 import yaml
+
+# --- Levels configuration (replaces constants.txt) ------------------------
+
+_LEVELS_CONFIG = None
+
+def load_levels_config() -> dict:
+    """Load and cache data/levels.yaml.
+
+    Expected shape:
+      {"levels": {"ball01": {"full_label": ..., "short_label": ..., "duration": ..., "level_up_target": ...}, ...}}
+    """
+    global _LEVELS_CONFIG
+    if isinstance(_LEVELS_CONFIG, dict):
+        return _LEVELS_CONFIG
+
+    # Resolve levels.yaml relative to this file, not the current working directory
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base_dir, "data", "levels.yaml")
+    if not os.path.exists(path):
+        print("Warning: data/levels.yaml not found; using empty levels config")
+        _LEVELS_CONFIG = {"levels": {}}
+        return _LEVELS_CONFIG
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except Exception as e:
+        print("Warning: failed to read data/levels.yaml:", str(e))
+        data = None
+
+    if not isinstance(data, dict) or not isinstance(data.get("levels"), dict):
+        print("Warning: data/levels.yaml has unexpected format; using empty levels config")
+        _LEVELS_CONFIG = {"levels": {}}
+        return _LEVELS_CONFIG
+
+    _LEVELS_CONFIG = data
+    return _LEVELS_CONFIG
+
+
+def _levels_map() -> dict:
+    cfg = load_levels_config()
+    return cfg.get("levels", {}) if isinstance(cfg, dict) else {}
 
 # Helper to set is_current_player flag in players.yaml
 def set_current_player_flag(selected_name: str):
@@ -126,24 +169,18 @@ from PySide6.QtGui import QPixmap
 from game_widget import GameWidget
 from game_state import Ball01Rules, Ball02Rules, Ball03Rules, Ball04Rules
 
-LEVEL_LABELS = {
-    "ball01": ["Tea with Granny", "Tea"],
-    "ball02": ["Shopping with Granny", "Shopping"],
-    "ball03": ["Granny gets Annoyed", "Annoyed"],
-    "ball04": ["Granny on the Rampage", "Rampage"],
-}
-
 
 def get_level_label(level_code: str) -> str:
     """Return the full, friendly label for a level code (e.g. 'Tea with Granny')."""
     if not level_code:
         return ""
     key = str(level_code).lower()
-    entry = LEVEL_LABELS.get(key)
-    if isinstance(entry, (list, tuple)) and entry:
-        return entry[0]  # full label
-    if isinstance(entry, str):
-        return entry
+    rec = _levels_map().get(key)
+    if isinstance(rec, dict):
+        val = rec.get("full_label")
+        if isinstance(val, str):
+            return val
+    # Fallback to raw code if unknown
     return str(level_code)
 
 
@@ -153,12 +190,40 @@ def get_level_short_label(level_code: str) -> str:
     if not level_code:
         return ""
     key = str(level_code).lower()
-    entry = LEVEL_LABELS.get(key)
-    if isinstance(entry, (list, tuple)) and len(entry) > 1:
-        return entry[1]
-    if isinstance(entry, str):
-        return entry
-    return str(level_code)
+    rec = _levels_map().get(key)
+    if isinstance(rec, dict):
+        val = rec.get("short_label")
+        if isinstance(val, str):
+            return val
+    # Fallback to full label or raw
+    full = get_level_label(level_code)
+    return full if full else str(level_code)
+
+
+def get_level_duration(level_code: str, default_seconds: int = 20) -> int:
+    """Return the round duration for a level code in seconds."""
+    if not level_code:
+        return int(default_seconds)
+    key = str(level_code).lower()
+    rec = _levels_map().get(key)
+    if isinstance(rec, dict):
+        val = rec.get("duration")
+        if isinstance(val, (int, float)):
+            return int(val)
+    return int(default_seconds)
+
+
+def get_level_up_target(level_code: str, default_target: int = 3) -> int:
+    """Return the level-up target threshold for a level code."""
+    if not level_code:
+        return int(default_target)
+    key = str(level_code).lower()
+    rec = _levels_map().get(key)
+    if isinstance(rec, dict):
+        val = rec.get("level_up_target")
+        if isinstance(val, (int, float)):
+            return int(val)
+    return int(default_target)
 
 
 
@@ -738,6 +803,14 @@ def open_main_landscape_from_portrait(main_window: QWidget):
             # Default to easiest rules if level is unknown
             rules = Ball01Rules()
 
+        # Configure round duration from data/levels.yaml when supported
+        try:
+            duration_sec = get_level_duration(level_code, default_seconds=20)
+            if hasattr(rules, "duration"):
+                rules.duration = float(duration_sec)
+        except Exception:
+            pass
+
         # Create game widget with the chosen rules
         game = GameWidget(parent=game_area, rules=rules)
 
@@ -756,13 +829,20 @@ def open_main_landscape_from_portrait(main_window: QWidget):
 
             # Fallback: try to infer from the full label if property is missing
             if not raw_code and level_label_sig:
-                for code, entry in LEVEL_LABELS.items():
-                    full_label = entry[0] if isinstance(entry, (list, tuple)) and entry else entry
-                    if full_label == level_label_sig:
+                for code, rec in _levels_map().items():
+                    if isinstance(rec, dict) and rec.get("full_label") == level_label_sig:
                         raw_code = code
                         break
 
             update_player_high_score(raw_code, player_name_sig, score_sig, lw)
+            # Re-enable buttons now that the round has finished
+            btn_play_again_end = lw.findChild(QPushButton, "btnPlayAgain")
+            if btn_play_again_end is not None:
+                btn_play_again_end.setEnabled(True)
+
+            btn_players_list_end = lw.findChild(QPushButton, "btnPlayersList")
+            if btn_players_list_end is not None:
+                btn_players_list_end.setEnabled(True)
 
         try:
             game.roundFinished.connect(_on_round_finished)
@@ -771,6 +851,15 @@ def open_main_landscape_from_portrait(main_window: QWidget):
 
         layout.addWidget(game)
         landscape_window._game_widget = game
+
+        # Disable navigation/replay buttons while a round is in progress
+        btn_play_again_local = landscape_window.findChild(QPushButton, "btnPlayAgain")
+        if btn_play_again_local is not None:
+            btn_play_again_local.setEnabled(False)
+
+        btn_players_list_local = landscape_window.findChild(QPushButton, "btnPlayersList")
+        if btn_players_list_local is not None:
+            btn_players_list_local.setEnabled(False)
 
     # Initial game widget creation
     _create_or_replace_game_widget()
