@@ -1,0 +1,24 @@
+levels:
+  ball01:
+    full_label: "Tea with Granny"
+    short_label: "Tea"
+    duration: 10
+    level_up_target: 3
+
+  ball02:
+    full_label: "Shopping with Granny"
+    short_label: "Shopping"
+    duration: 20
+    level_up_target: 3
+
+  ball03:
+    full_label: "Granny gets Annoyed"
+    short_label: "Annoyed"
+    duration: 20
+    level_up_target: 3
+
+  ball04:
+    full_label: "Granny on the Rampage"
+    short_label: "Rampage"
+    duration: 20
+    level_up_target: 3

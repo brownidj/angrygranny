@@ -1,0 +1,143 @@
+Mum:
+  email: admin@granny.com
+  password: admin123
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: true
+  is_current_player: false
+David:
+  email: david@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 12
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: true
+Teruko:
+  email: teruko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 27
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Mihoko:
+  email: mihoko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Alex:
+  email: david@granny.com
+  password: qwerpoiu
+  current_level: ball02
+  high_scores:
+    ball01: 6
+    ball02: 8
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Barb:
+  email: teruko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Charlie:
+  email: mihoko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Francine:
+  email: david@granny.com
+  password: qwerpoiu
+  current_level: ball02
+  high_scores:
+    ball01: 6
+    ball02: 8
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Geraldine:
+  email: teruko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Henry:
+  email: mihoko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Ines:
+  email: david@granny.com
+  password: qwerpoiu
+  current_level: ball02
+  high_scores:
+    ball01: 6
+    ball02: 8
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Jessica:
+  email: teruko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false
+Larry:
+  email: mihoko@granny.com
+  password: qwerpoiu
+  current_level: ball01
+  high_scores:
+    ball01: 0
+    ball02: 0
+    ball03: 0
+    ball04: 0
+  is_admin: false
+  is_current_player: false

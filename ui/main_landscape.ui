@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="windowTitle">
+            <string>Angry Granny</string>
+        </property>
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+<!--                <width>1280</width>-->
+                <width>1000</width>
+                <height>640</height>
+            </rect>
+        </property>
+        <widget class="QWidget" name="centralwidget">
+            <property name="styleSheet">
+                <string>
+                    QWidget#centralwidget {
+                        background-color: #C2F4F4;
+                    }
+                </string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                    <layout class="QHBoxLayout" name="horizontalCenterLayout">
+                        <item>
+                            <spacer name="leftSpacer">
+                                <property name="orientation">
+                                    <enum>Qt::Horizontal</enum>
+                                </property>
+                                <property name="sizeHint" stdset="0">
+                                    <size>
+                                        <width>40</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                        </item>
+                        <item>
+                            <widget class="QGroupBox" name="groupHighScores">
+                                <property name="title">
+                                    <string>Highest Scores</string>
+                                </property>
+                                <layout class="QVBoxLayout" name="highScoresLayout">
+                                    <item>
+                                        <widget class="QTableWidget" name="tableHighScores">
+                                            <property name="minimumSize">
+                                                <size>
+                                                    <width>300</width>
+                                                    <height>200</height>
+                                                </size>
+                                            </property>
+                                            <property name="sizePolicy">
+                                                <sizepolicy hsizetype="Preferred" vsizetype="Expanding"/>
+                                            </property>
+                                            <property name="horizontalScrollBarPolicy">
+                                                <enum>Qt::ScrollBarAlwaysOff</enum>
+                                            </property>
+                                            <property name="verticalScrollBarPolicy">
+                                                <enum>Qt::ScrollBarAsNeeded</enum>
+                                            </property>
+                                            <property name="alternatingRowColors">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="selectionBehavior">
+                                                <enum>QAbstractItemView::SelectRows</enum>
+                                            </property>
+                                            <property name="editTriggers">
+                                                <enum>QAbstractItemView::NoEditTriggers</enum>
+                                            </property>
+                                            <property name="sortingEnabled">
+                                                <bool>true</bool>
+                                            </property>
+                                            <property name="verticalHeaderVisible">
+                                                <bool>false</bool>
+                                            </property>
+                                            <property name="columnCount">
+                                                <number>3</number>
+                                            </property>
+                                            <column>
+                                                <property name="text">
+                                                    <string>Rank</string>
+                                                </property>
+                                            </column>
+                                            <column>
+                                                <property name="text">
+                                                    <string>Player</string>
+                                                </property>
+                                            </column>
+                                            <column>
+                                                <property name="text">
+                                                    <string>Score</string>
+                                                </property>
+                                            </column>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QFrame" name="gameArea">
+                                <property name="frameShape">
+                                    <enum>QFrame::Box</enum>
+                                </property>
+                                <property name="lineWidth">
+                                    <number>2</number>
+                                </property>
+                                <property name="minimumSize">
+                                    <size>
+                                        <width>200</width>
+                                        <height>200</height>
+                                    </size>
+                                </property>
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>16777215</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="sizePolicy">
+                                    <sizepolicy hsizetype="Preferred" vsizetype="Preferred"/>
+                                </property>
+                                <property name="styleSheet">
+                                    <string>
+                                        QFrame#gameArea {
+                                            border: 2px solid black;
+                                        }
+                                    </string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QWidget" name="controlsPanel">
+                                <layout class="QVBoxLayout" name="controlsLayout">
+                                    <item>
+                                        <widget class="QWidget" name="playerDetailsPanel">
+                                            <layout class="QVBoxLayout" name="playerDetailsLayout">
+                                                <item>
+                                                    <widget class="QLineEdit" name="linePlayer">
+                                                        <property name="readOnly">
+                                                            <bool>true</bool>
+                                                        </property>
+                                                        <property name="placeholderText">
+                                                            <string>Player</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                <widget class="QLineEdit" name="lineLevel">
+                                                    <property name="readOnly">
+                                                        <bool>true</bool>
+                                                    </property>
+                                                    <property name="placeholderText">
+                                                        <string>Level</string>
+                                                    </property>
+                                                    <property name="minimumSize">
+                                                        <size>
+                                                            <width>250</width>
+                                                            <height>0</height>
+                                                        </size>
+                                                    </property>
+                                                </widget>
+                                                </item>
+                                            </layout>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <spacer name="detailsSpacer">
+                                            <property name="orientation">
+                                                <enum>Qt::Vertical</enum>
+                                            </property>
+                                            <property name="sizeHint" stdset="0">
+                                                <size>
+                                                    <width>20</width>
+                                                    <height>40</height>
+                                                </size>
+                                            </property>
+                                        </spacer>
+                                    </item>
+                                    <item>
+                                        <widget class="QPushButton" name="btnPlayAgain">
+                                            <property name="text">
+                                                <string>Play Again</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                    <item>
+                                        <widget class="QPushButton" name="btnPlayersList">
+                                            <property name="text">
+                                                <string>Choose Another Player</string>
+                                            </property>
+                                        </widget>
+                                    </item>
+                                </layout>
+                            </widget>
+                        </item>
+                        <item>
+                            <spacer name="rightSpacer">
+                                <property name="orientation">
+                                    <enum>Qt::Horizontal</enum>
+                                </property>
+                                <property name="sizeHint" stdset="0">
+                                    <size>
+                                        <width>40</width>
+                                        <height>20</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                        </item>
+                    </layout>
+                </item>
+                <property name="stretch">
+                    <string>1</string>
+                </property>
+            </layout>
+        </widget>
+        <addaction name="centralwidget"/>
+        <!-- your layout, widgets, etc. -->
+    </widget>
+    <resources/>
+    <connections/>
+</ui>

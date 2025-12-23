@@ -2,7 +2,7 @@ import time
 
 
 class GameTimer:
-    def __init__(self, duration_secs):
+    def __init__(self, duration_secs=7):
         self.duration_secs = duration_secs
         self.start_time = None
 
